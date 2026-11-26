@@ -14,6 +14,8 @@ import {
   chatActionErrorMessage,
   makeThreadErrorSetter,
 } from "../ChatView.logic";
+import { useThreadActionMenu } from "../../hooks/useThreadActionMenu";
+import { dispatchMenuAction } from "../../shortcuts/dispatcher";
 import { useStableCallback } from "../../hooks/useStableCallback";
 import { useDeadlinePassed, useNowAfter } from "../../hooks/useDeadline";
 import type { usePendingThreadRequests } from "./usePendingThreadRequests";
@@ -706,7 +708,33 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
         }),
       );
     };
+  const { readMenu: readThreadMenu } = useThreadActionMenu({
+    threadRef: activeThreadShell ? activeThreadRef : null,
+    projectCwd: activeProjectCwd,
+    canShareWithGuest: false,
+    onStartRename: () => {
+      if (activeThreadRef) dispatchMenuAction(`thread.rename:${scopedThreadKey(activeThreadRef)}`);
+    },
+  });
+  const runThreadMenuShortcut =
+    (id: "snooze" | "rename" | "archive" | "delete") =>
+    ({
+      event,
+      terminalFocusOwner,
+    }: Parameters<NonNullable<ChatShortcutCommands["thread.rename"]>>[0]) => {
+      if (terminalFocusOwner !== null) return false;
+      const menu = readThreadMenu();
+      const row = menu?.items.find(
+        (item) => item.id === id || (id === "snooze" && item.id === "unsnooze"),
+      );
+      if (!menu || !row || row.disabled) return false;
+      if (!event.repeat) void menu.run(row.id === "snooze" ? "snooze:custom" : row.id);
+    };
   const shortcuts = {
+    "thread.snooze": runThreadMenuShortcut("snooze"),
+    "thread.rename": runThreadMenuShortcut("rename"),
+    "thread.archive": runThreadMenuShortcut("archive"),
+    "thread.delete": runThreadMenuShortcut("delete"),
     "thread.settle": () => {
       if (!threadTriagePermitted(environmentId)) return false;
       if (!activeThreadShell || !activeThreadRef || !serverConfigLoaded) return;

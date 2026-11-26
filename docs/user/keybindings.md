@@ -80,6 +80,10 @@ The last matching rule in `keybindings.json` wins, even across different command
 
 ## Commands with special behavior
 
+Assign **Thread: Snooze**, **Thread: Rename**, **Thread: Archive**, and **Thread: Delete**
+to act on the open thread. Snooze opens the custom snooze dialog or wakes an already
+snoozed thread. The command palette also offers these actions for the open thread.
+
 - `thread.stop`: Interrupts the running turn (unbound by default).
 - `thread.regenerateTitle`: Regenerates the focused thread's title (unbound by default).
 - `thread.undo` (`mod+z`): Undoes recent sidebar actions (unpin, settle, snooze, archive, discard draft) within 5 seconds, including consecutive actions of the same kind.

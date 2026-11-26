@@ -44,6 +44,10 @@ const THREAD_KEYBINDING_COMMANDS = [
   "thread.settle",
   "thread.pin",
   "thread.regenerateTitle",
+  "thread.snooze",
+  "thread.rename",
+  "thread.archive",
+  "thread.delete",
   "thread.undo",
   ...THREAD_JUMP_KEYBINDING_COMMANDS,
 ] as const;

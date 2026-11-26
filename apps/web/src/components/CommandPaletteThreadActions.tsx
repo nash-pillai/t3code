@@ -12,6 +12,7 @@ import {
   MailOpenIcon,
   MessageSquareIcon,
   MessageSquarePlusIcon,
+  PencilIcon,
   PinIcon,
   PinOffIcon,
   RefreshCwIcon,
@@ -19,6 +20,8 @@ import {
   Trash2Icon,
 } from "lucide-react";
 
+import { scopedThreadKey } from "@t3tools/client-runtime/environment";
+import { dispatchMenuAction } from "../shortcuts/dispatcher";
 import { useThreadActionMenu } from "../hooks/useThreadActionMenu";
 import {
   ADDON_ICON_CLASS,
@@ -40,6 +43,7 @@ const ICONS: Record<string, LucideIcon> = {
   "mail-open": MailOpenIcon,
   "message-square": MessageSquareIcon,
   "message-square-plus": MessageSquarePlusIcon,
+  pencil: PencilIcon,
   pin: PinIcon,
   "pin-off": PinOffIcon,
   "refresh-cw": RefreshCwIcon,
@@ -47,8 +51,8 @@ const ICONS: Record<string, LucideIcon> = {
   trash: Trash2Icon,
 };
 
-// The palette has its own rows for these, and no inline title editor for rename.
-const SKIPPED: ReadonlySet<ThreadActionMenuId> = new Set(["rename", "project-settings"]);
+// The palette has a dedicated project settings row.
+const SKIPPED: ReadonlySet<ThreadActionMenuId> = new Set(["project-settings"]);
 
 const SHORTCUTS: Partial<Record<ThreadActionMenuId, KeybindingCommand>> = {
   settle: "thread.settle",
@@ -56,6 +60,11 @@ const SHORTCUTS: Partial<Record<ThreadActionMenuId, KeybindingCommand>> = {
   pin: "thread.pin",
   unpin: "thread.pin",
   "regenerate-title": "thread.regenerateTitle",
+  snooze: "thread.snooze",
+  unsnooze: "thread.snooze",
+  rename: "thread.rename",
+  archive: "thread.archive",
+  delete: "thread.delete",
 };
 
 /** The open thread's menu actions (settle, pin, snooze, archive...) as palette rows. */
@@ -63,7 +72,15 @@ export function useCommandPaletteThreadActions(input: {
   readonly threadRef: ScopedThreadRef | null;
   readonly projectCwd: string | null;
 }): Array<CommandPaletteActionItem | CommandPaletteSubmenuItem> {
-  const { readMenu } = useThreadActionMenu({ ...input, canShareWithGuest: false });
+  const { readMenu } = useThreadActionMenu({
+    ...input,
+    canShareWithGuest: false,
+    onStartRename: () => {
+      if (input.threadRef) {
+        dispatchMenuAction(`thread.rename:${scopedThreadKey(input.threadRef)}`);
+      }
+    },
+  });
   const menu = readMenu();
   if (!menu) return [];
 

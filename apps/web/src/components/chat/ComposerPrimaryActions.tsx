@@ -20,6 +20,7 @@ import type { MessageResolver } from "~/i18n/messages";
 import { formatContextWindowTokens } from "~/lib/contextWindow";
 import { cn, isMacPlatform } from "~/lib/utils";
 import { useShortcutModifierState } from "../../shortcutModifierState";
+import { openContextMenuFromKeyboard } from "../../contextMenuSource";
 import { StageBackdropButtonArt, useSidebarStageBackdropVariant } from "../SidebarStageBackdrop";
 import { Button } from "../ui/button";
 import { Spinner } from "../ui/spinner";
@@ -63,6 +64,7 @@ interface ComposerPrimaryActionsProps {
   preserveComposerFocusOnPointerDown?: boolean;
   isEditingQueuedMessage?: boolean;
   onSubmitMessage?: MouseEventHandler<HTMLButtonElement>;
+  onSendContextMenu?: MouseEventHandler<HTMLButtonElement> | undefined;
   onResume?: () => void;
   onPreviousPendingQuestion: () => void;
   onInterrupt: () => void;
@@ -254,6 +256,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
   preserveComposerFocusOnPointerDown = false,
   isEditingQueuedMessage = false,
   onSubmitMessage,
+  onSendContextMenu,
   onResume,
   onPreviousPendingQuestion,
   onInterrupt,
@@ -462,6 +465,9 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
       }
       aria-label={submitStatus ?? submitLabel}
       aria-busy={isBusyOrHeld || undefined}
+      aria-haspopup={!showResume && onSendContextMenu ? "menu" : undefined}
+      onContextMenu={showResume ? undefined : onSendContextMenu}
+      onKeyDown={!showResume && onSendContextMenu ? openContextMenuFromKeyboard : undefined}
     >
       {stageBackdropVariant ? (
         <span className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">

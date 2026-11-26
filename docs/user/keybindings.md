@@ -80,6 +80,9 @@ The last matching rule in `keybindings.json` wins, even across different command
 
 ## Commands with special behavior
 
+Bind a `settings.<page>` command to open that Settings page. For example,
+`settings.keybindings` opens Keybindings and focuses its filter.
+
 - `thread.stop`: Interrupts the running turn (unbound by default).
 - `thread.regenerateTitle`: Regenerates the focused thread's title (unbound by default).
 - `thread.undo` (`mod+z`): Undoes recent sidebar actions (unpin, settle, snooze, archive, discard draft) within 5 seconds, including consecutive actions of the same kind.

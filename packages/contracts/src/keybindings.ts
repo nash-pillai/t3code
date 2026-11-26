@@ -55,7 +55,38 @@ const MODEL_PICKER_KEYBINDING_COMMANDS = [
   ...MODEL_PICKER_JUMP_KEYBINDING_COMMANDS,
 ] as const;
 
+export const SETTINGS_KEYBINDING_PAGES = [
+  "about",
+  "access",
+  "appearance",
+  "archived",
+  "beta",
+  "browser",
+  "chat",
+  "connections",
+  "devices",
+  "diagnostics",
+  "diffs",
+  "general",
+  "integrations",
+  "keybindings",
+  "labs",
+  "maintenance",
+  "open-source-licenses",
+  "projects",
+  "providers",
+  "scheduled-tasks",
+  "secrets",
+  "snap-shot",
+  "source-control",
+  "storage",
+  "threads",
+  "voice",
+  "worktrees",
+] as const;
+
 export const STATIC_KEYBINDING_COMMANDS = [
+  ...SETTINGS_KEYBINDING_PAGES.map((page) => `settings.${page}` as const),
   "workspace.focusNext",
   "workspace.focusPrevious",
   "sidebar.toggle",

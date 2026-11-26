@@ -1,3 +1,4 @@
+import { extractCodexMemoryCitations } from "@t3tools/shared/codexMemoryCitations";
 import { shouldPreserveAssistantLineBreaks } from "@t3tools/shared/assistantInsights";
 import { MessageId, type TurnItemId } from "@t3tools/contracts";
 import { canForkProjectedAssistantItem } from "@t3tools/client-runtime/state/thread-workflows";
@@ -33,7 +34,10 @@ export function AssistantTimelineRow({ row }: { row: Extract<TimelineRow, { kind
     row.message.streaming ? ctx.threadRef : null,
     row.projectedItem?.item.id,
   );
-  const text = liveText ?? row.message.text;
+  const rawText = liveText ?? row.message.text;
+  const { text, citations } = row.message.streaming
+    ? { text: rawText, citations: [] }
+    : extractCodexMemoryCitations(rawText);
   const messageText =
     text || (row.message.streaming || row.suppressEmptyResponse ? "" : gt("(empty response)"));
 
@@ -70,6 +74,21 @@ export function AssistantTimelineRow({ row }: { row: Extract<TimelineRow, { kind
             />
           </AssistantCitationSource>
         </div>
+        {citations.length ? (
+          <details className="mt-2 text-xs text-muted-foreground">
+            <summary className="cursor-pointer">
+              <T>Memory sources</T>
+            </summary>
+            <ul className="mt-1 space-y-1">
+              {citations.map((citation) => (
+                <li key={JSON.stringify(citation)}>
+                  <span className="font-mono">{citation.source}</span>
+                  {citation.note ? <span> · {citation.note}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
         {!row.showAssistantMeta && row.projectedItem?.item.status === "interrupted" ? (
           <div className="mt-1.5 flex">
             <AssistantStatusBadge status="interrupted" />

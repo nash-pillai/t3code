@@ -45,7 +45,7 @@ Remap under **Copy Link or Thread** and **Copy Number** in **Settings → Keybin
 
 ## Edit the configuration file
 
-Keybindings are stored on the environment's machine at `~/.t3/userdata/keybindings.json` as a JSON array:
+Keybindings are stored on the environment’s machine in `keybindings.json`. Use **Open keybindings file** from Settings → Keybindings to find it. On new Linux environments it lives under `$XDG_CONFIG_HOME/t3code`. The file contains a JSON array:
 
 ```json
 [

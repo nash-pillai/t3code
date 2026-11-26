@@ -1,4 +1,5 @@
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import { linuxAppDirectories } from "@t3tools/shared/linuxAppDirectories";
 import {
   buildEnvironmentCaptureCommand,
   extractEnvironmentValues,
@@ -276,7 +277,17 @@ export const expandHomePath = Effect.fn(function* (input: string) {
 export const resolveBaseDir = Effect.fn(function* (raw: string | undefined) {
   const { join, resolve } = yield* Path.Path;
   if (!raw || raw.trim().length === 0) {
-    return join(yield* HostProcess.HomeDirectory, ".t3");
+    const home = yield* HostProcess.HomeDirectory;
+    const legacy = join(home, ".t3");
+    if ((yield* HostProcess.Platform) !== "linux") return legacy;
+    const fs = yield* FileSystem.FileSystem;
+    const { state } = linuxAppDirectories(home, yield* HostProcess.Environment);
+    const exists = (dir: string) => fs.exists(dir).pipe(Effect.orElseSucceed(() => false));
+    if (yield* exists(join(state, "userdata"))) return state;
+    if ((yield* exists(join(legacy, "userdata"))) || (yield* exists(join(legacy, "service.env")))) {
+      return legacy;
+    }
+    return state;
   }
   return resolve(yield* expandHomePath(raw.trim()));
 });

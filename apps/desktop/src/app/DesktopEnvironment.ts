@@ -10,6 +10,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Path from "effect/Path";
+import { linuxAppDirectories } from "@t3tools/shared/linuxAppDirectories";
 
 import * as DesktopAppSettings from "../settings/DesktopAppSettings.ts";
 import * as DesktopConfig from "./DesktopConfig.ts";
@@ -44,6 +45,8 @@ export class DesktopEnvironment extends Context.Service<
     readonly resourcesPath: string;
     readonly homeDirectory: string;
     readonly appDataDirectory: string;
+    readonly linuxProfileParent?: string | undefined;
+    readonly linuxRecoveryParent?: string | undefined;
     readonly baseDir: string;
     readonly stateDir: string;
     readonly desktopSettingsPath: string;
@@ -149,6 +152,15 @@ const make = Effect.fn("desktop.environment.make")(function* (
   const homeDirectory = input.homeDirectory;
   const devServerUrl = config.devServerUrl;
   const isDevelopment = Option.isSome(devServerUrl);
+  const xdg =
+    input.platform === "linux"
+      ? linuxAppDirectories(homeDirectory, {
+          XDG_CONFIG_HOME: Option.getOrUndefined(config.xdgConfigHome),
+          XDG_DATA_HOME: Option.getOrUndefined(config.xdgDataHome),
+          XDG_STATE_HOME: Option.getOrUndefined(config.xdgStateHome),
+          XDG_CACHE_HOME: Option.getOrUndefined(config.xdgCacheHome),
+        })
+      : undefined;
   const appDataDirectory =
     input.platform === "win32"
       ? Option.getOrElse(config.appDataDirectory, () =>
@@ -156,11 +168,15 @@ const make = Effect.fn("desktop.environment.make")(function* (
         )
       : input.platform === "darwin"
         ? path.join(homeDirectory, "Library", "Application Support")
-        : Option.getOrElse(config.xdgConfigHome, () => path.join(homeDirectory, ".config"));
+        : xdg
+          ? path.dirname(xdg.config)
+          : path.join(homeDirectory, ".config");
   const baseDir = resolveDesktopBaseDir({
     homeDirectory,
     joinPath: path.join,
     t3Home: config.t3Home,
+    platform: input.platform,
+    xdgStateHome: Option.getOrUndefined(config.xdgStateHome),
   });
   const rootDir = path.resolve(input.dirname, "../../..");
   const appRoot = input.isPackaged ? input.appPath : rootDir;
@@ -197,14 +213,22 @@ const make = Effect.fn("desktop.environment.make")(function* (
     resourcesPath,
     homeDirectory,
     appDataDirectory,
+    linuxProfileParent: xdg ? path.dirname(xdg.data) : undefined,
+    linuxRecoveryParent: xdg ? path.dirname(xdg.state) : undefined,
     baseDir,
     stateDir,
     desktopSettingsPath: path.join(stateDir, "desktop-settings.json"),
     clientSettingsPath: path.join(stateDir, "client-settings.json"),
     savedEnvironmentRegistryPath: path.join(stateDir, "saved-environments.json"),
-    serverSettingsPath: path.join(stateDir, "settings.json"),
+    serverSettingsPath: path.join(
+      xdg?.state === baseDir && !isDevelopment ? xdg.config : stateDir,
+      "settings.json",
+    ),
     logDir: path.join(stateDir, "logs"),
-    browserArtifactsDir: path.join(stateDir, "browser-artifacts"),
+    browserArtifactsDir: path.join(
+      xdg?.state === baseDir && !isDevelopment ? xdg.data : stateDir,
+      "browser-artifacts",
+    ),
     rootDir,
     appRoot,
     serverRoot,

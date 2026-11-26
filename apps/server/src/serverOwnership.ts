@@ -120,7 +120,12 @@ const olderBootServiceHome = Effect.fn("olderBootServiceHome")(
     const unitPath =
       platform === "darwin"
         ? NodePath.join(homeDir, "Library", "LaunchAgents", BOOT_SERVICE_PLIST_FILE)
-        : NodePath.join(homeDir, ".config", "systemd", "user", BOOT_SERVICE_UNIT_FILE);
+        : NodePath.join(
+            (yield* HostProcess.Environment).XDG_CONFIG_HOME || NodePath.join(homeDir, ".config"),
+            "systemd",
+            "user",
+            BOOT_SERVICE_UNIT_FILE,
+          );
     const baseDir = bootServiceBaseDirOf(yield* fs.readFileString(unitPath));
     if (
       baseDir === undefined ||

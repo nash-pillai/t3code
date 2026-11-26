@@ -493,6 +493,7 @@ const COMMAND_LABELS: Partial<Record<KeybindingCommand, string>> = {
   "composer.stash": msg("Composer: Stash"),
   "composer.host": msg("Composer: Host"),
   "composer.cycleHost": msg("Composer: Cycle Host"),
+  "composer.attachFiles": msg("Composer: Attach Files"),
   "composer.effort": msg("Composer: Effort"),
   "composer.increaseEffort": msg("Composer: Increase Effort"),
   "composer.decreaseEffort": msg("Composer: Decrease Effort"),

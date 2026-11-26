@@ -8,6 +8,8 @@ To free a default shortcut, choose **Unassign** from its row menu (**Reset to de
 
 ## Common composer shortcuts
 
+Assign **Composer: Attach Files** in Settings → Keybindings to open the active composer’s file picker.
+
 | Action                      | Default           | Notes                                                              |
 | --------------------------- | ----------------- | ------------------------------------------------------------------ |
 | Start / finish dictation    | `mod+shift+d`     | `Esc` discards. See [Voice input](./voice-input.md).               |

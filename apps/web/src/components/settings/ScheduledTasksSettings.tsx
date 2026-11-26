@@ -25,7 +25,6 @@ import type {
   ScheduledTaskThreadMode,
   ScheduledTaskUpsertInput,
   ScheduledTaskWebhookDeliverySummary,
-  ThreadId,
 } from "@t3tools/contracts";
 import {
   DEFAULT_WEBHOOK_PROMPT,
@@ -42,6 +41,7 @@ import {
   MAX_WEBHOOK_FILTERS,
   MIN_SCHEDULED_TASK_INTERVAL_MS,
   ProviderInstanceId,
+  ThreadId,
   resolveEnvironmentMachineKind,
   scheduledTaskThreadMode,
 } from "@t3tools/contracts";
@@ -68,12 +68,14 @@ import {
   type EnvironmentPresentation,
 } from "../../state/environments";
 import {
+  readThreadShell,
   useProjects,
   useQuietThreadShell,
   useThreadShell,
   useVisibleThreadShells,
 } from "../../state/entities";
 import { buildThreadRouteParams } from "../../threadRoutes";
+import { parseCodexSchedule, type CodexScheduleImport } from "./codexScheduleImport";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { environmentAtomList, environmentIdsKey } from "../../state/environmentAtomList";
 import { usePaginatedBranches, useThreadSearch } from "../../state/queries";
@@ -406,7 +408,10 @@ export function ScheduledTasksSettings(target: {
   const [editor, setEditor] = useState<{
     environmentId: EnvironmentId;
     task: ScheduledTask | null;
+    codexImport?: CodexScheduleImport | undefined;
+    pendingImports?: ReadonlyArray<CodexScheduleImport> | undefined;
   } | null>(null);
+  const importFile = useRef<HTMLInputElement>(null);
   const openForEdit = (environmentId: EnvironmentId, task: ScheduledTask) => {
     setEditor({ environmentId, task });
   };
@@ -442,6 +447,11 @@ export function ScheduledTasksSettings(target: {
   }
   const navigate = useNavigate({ from: "/settings/scheduled-tasks" });
   const closeEditor = () => {
+    const [codexImport, ...pendingImports] = editor?.pendingImports ?? [];
+    if (codexImport && editor) {
+      setEditor({ ...editor, codexImport, pendingImports });
+      return;
+    }
     setEditor(null);
     if (target.taskId === undefined) return;
     void navigate({
@@ -462,24 +472,78 @@ export function ScheduledTasksSettings(target: {
     permittedEnvironments.find(
       (entry) => entry.environmentId === defaultEnvironment?.environmentId,
     ) ?? permittedEnvironments[0];
+  const openCodexImports = async (files: ReadonlyArray<File>) => {
+    if (!creationEnvironment) return;
+    const imports = new Map<string, CodexScheduleImport>();
+    let rejected = false;
+    for (const file of files) {
+      try {
+        const task = file.size <= 1_048_576 ? parseCodexSchedule(await file.text()) : null;
+        if (task) imports.set(task.id, task);
+        else rejected = true;
+      } catch {
+        rejected = true;
+      }
+    }
+    if (rejected) {
+      toastManager.add({
+        title: gt("Could not read Codex Desktop schedule"),
+        description: gt(
+          "Select an automation.toml file with a daily, weekly, or interval schedule.",
+        ),
+        type: "error",
+      });
+    }
+    const [codexImport, ...pendingImports] = imports.values();
+    if (codexImport) {
+      setEditor({
+        environmentId: creationEnvironment.environmentId,
+        task: null,
+        codexImport,
+        pendingImports,
+      });
+    }
+  };
   return (
     <SettingsPageContainer>
+      <input
+        ref={importFile}
+        type="file"
+        accept=".toml"
+        multiple
+        hidden
+        onChange={(event) => {
+          const files = Array.from(event.currentTarget.files ?? []);
+          event.currentTarget.value = "";
+          if (files.length) void openCodexImports(files);
+        }}
+      />
       <SettingsSection
         {...setting("scheduled-tasks")}
         variant="plain"
         headerAction={
-          <Button
-            size="xs"
-            variant="ghost-muted"
-            disabled={!creationEnvironment}
-            onClick={() =>
-              creationEnvironment &&
-              setEditor({ environmentId: creationEnvironment.environmentId, task: null })
-            }
-          >
-            <PlusIcon className="size-3" />
-            <T>New task</T>
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              size="xs"
+              variant="ghost-muted"
+              disabled={!creationEnvironment}
+              onClick={() => importFile.current?.click()}
+            >
+              <T>Import Codex schedule</T>
+            </Button>
+            <Button
+              size="xs"
+              variant="ghost-muted"
+              disabled={!creationEnvironment}
+              onClick={() =>
+                creationEnvironment &&
+                setEditor({ environmentId: creationEnvironment.environmentId, task: null })
+              }
+            >
+              <PlusIcon className="size-3" />
+              <T>New task</T>
+            </Button>
+          </div>
         }
       >
         {scope.kind === "unavailable" ? (
@@ -521,9 +585,10 @@ export function ScheduledTasksSettings(target: {
       </SettingsSection>
       {editor ? (
         <ScheduledTaskEditorDialog
-          key={`${editor.environmentId}:${editor.task?.id ?? "new"}`}
+          key={`${editor.environmentId}:${editor.task?.id ?? editor.codexImport?.id ?? "new"}`}
           initialEnvironmentId={editor.environmentId}
           task={editor.task}
+          codexImport={editor.codexImport}
           onClose={closeEditor}
         />
       ) : null}
@@ -1286,10 +1351,12 @@ function WebhookDeliveryMode({ environmentId }: { readonly environmentId: Enviro
 function ScheduledTaskEditorDialog({
   initialEnvironmentId,
   task,
+  codexImport,
   onClose,
 }: {
   readonly initialEnvironmentId: EnvironmentId;
   readonly task: ScheduledTask | null;
+  readonly codexImport?: CodexScheduleImport | undefined;
   readonly onClose: () => void;
 }) {
   const [saving, setSaving] = useState(false);
@@ -1307,6 +1374,7 @@ function ScheduledTaskEditorDialog({
         <ScheduledTaskEditorForm
           initialEnvironmentId={initialEnvironmentId}
           task={task}
+          codexImport={codexImport}
           saving={saving}
           onSavingChange={setSaving}
           onClose={onClose}
@@ -1493,12 +1561,14 @@ function ScheduledTaskDestination({
 function ScheduledTaskEditorForm({
   initialEnvironmentId,
   task,
+  codexImport,
   saving,
   onSavingChange: setSaving,
   onClose,
 }: {
   readonly initialEnvironmentId: EnvironmentId;
   readonly task: ScheduledTask | null;
+  readonly codexImport?: CodexScheduleImport | undefined;
   readonly saving: boolean;
   readonly onSavingChange: (saving: boolean) => void;
   readonly onClose: () => void;
@@ -1541,14 +1611,39 @@ function ScheduledTaskEditorForm({
     "webhookTasks",
     messages,
   );
-  const [draft, setDraft] = useState<DraftState>(() =>
-    task
-      ? taskToDraft(task)
-      : {
-          ...EMPTY_DRAFT,
-          projectId: defaultScheduledTaskProjectId(scopedProjects, scope),
-        },
-  );
+  const [draft, setDraft] = useState<DraftState>(() => {
+    if (task) return taskToDraft(task);
+    const target = codexImport?.targetThreadId;
+    const candidate = target
+      ? providers
+          .filter((provider) => provider.driver === "codex")
+          .map((provider) =>
+            readThreadShell(
+              scopeThreadRef(
+                environmentId,
+                ThreadId.make("import:" + provider.instanceId + ":" + target),
+              ),
+            ),
+          )
+          .filter(
+            (row) => row !== null && scopedProjects.some((project) => project.id === row.projectId),
+          )
+      : [];
+    const bound = candidate.length === 1 ? candidate[0] : undefined;
+    const sourceProject = scopedProjects.find(
+      (project) => project.workspaceRoot === codexImport?.cwd,
+    );
+    return {
+      ...EMPTY_DRAFT,
+      ...codexImport?.draft,
+      ...(codexImport ? { workspaceMode: "root" } : {}),
+      ...(bound ? { threadId: bound.id, threadMode: "continue" } : {}),
+      projectId:
+        bound?.projectId ??
+        sourceProject?.id ??
+        defaultScheduledTaskProjectId(scopedProjects, scope),
+    };
+  });
   // Pinned first. The chosen project stays listed after it is archived.
   const projects = scopedProjects
     .filter(
@@ -1639,6 +1734,13 @@ function ScheduledTaskEditorForm({
     )
       return;
     const selection = activeSelection;
+    if (codexImport?.targetThreadId && !draft.threadId) {
+      reportFailure(
+        gt("Choose a destination thread"),
+        gt("Import the original Codex thread first or select its replacement."),
+      );
+      return;
+    }
     if (
       !draft.title.trim() ||
       !draft.prompt.trim() ||

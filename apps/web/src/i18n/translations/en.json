@@ -13023,5 +13023,10 @@
       "v": "v"
     },
     " more in Linked items"
-  ]
+  ],
+  "4cc254e84f046850": "Could not read Codex Desktop schedule",
+  "a38d112c430d3528": "Select an automation.toml file with a daily, weekly, or interval schedule.",
+  "8513e73af6d5274c": "Choose a destination thread",
+  "4aed31950c528161": "Import the original Codex thread first or select its replacement.",
+  "63e0c59ea9f7708c": "Import Codex schedule"
 }

@@ -84,6 +84,9 @@ export function applyUsageLimitsUpdate(input: {
   return {
     ...makeUsageLimits({ checkedAt: input.checkedAt, windows: merged.values() }),
     ...(previous?.resetCredits !== undefined ? { resetCredits: previous.resetCredits } : {}),
+    ...(previous?.purchasedCredits !== undefined
+      ? { purchasedCredits: previous.purchasedCredits }
+      : {}),
     ...(previous?.zeroSpendCap ? { zeroSpendCap: true } : {}),
     ...(unavailable !== undefined ? { unavailable } : {}),
   };

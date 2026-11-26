@@ -186,6 +186,15 @@ function SegmentPopover({
         {account.plan ? (
           <Row label={gt("Plan", { $context: "subscription plan" })}>{account.plan}</Row>
         ) : null}
+        {account.limits.purchasedCredits !== undefined ? (
+          <Row label={gt("Purchased credits")}>
+            {account.limits.purchasedCredits === "unlimited"
+              ? gt("Unlimited")
+              : new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(
+                  Number(account.limits.purchasedCredits),
+                )}
+          </Row>
+        ) : null}
         {where ? (
           <Row
             label={

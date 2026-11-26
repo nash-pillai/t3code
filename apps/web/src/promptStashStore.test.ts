@@ -13,6 +13,7 @@ import {
   PROMPT_STASH_STORAGE_KEY,
   MAX_STASH_ENTRY_ATTACHMENT_CHARS,
   partitionStashAttachments,
+  stashEntriesForThread,
   usePromptStashStore,
   writePromptStashStorageForTest,
   type PromptStashEntry,
@@ -48,6 +49,21 @@ function resetPromptStashStore() {
   writePromptStashStorageForTest("");
   removeLocalStorageItem(PROMPT_STASH_STORAGE_KEY);
 }
+
+describe("stashEntriesForThread", () => {
+  it("keeps old and global stashes visible, and isolates thread stashes by environment", () => {
+    const origin = {
+      environmentId: EnvironmentId.make("host-a"),
+      threadId: ThreadId.make("thread-a"),
+    };
+    const other = { ...origin, environmentId: EnvironmentId.make("host-b") };
+    const legacy = makeEntry({ id: "legacy" });
+    const global = { ...makeEntry({ id: "global" }), scope: "global", origin } as const;
+    const local = { ...makeEntry({ id: "local" }), scope: "thread", origin } as const;
+    expect(stashEntriesForThread([legacy, global, local], origin)).toEqual([legacy, global, local]);
+    expect(stashEntriesForThread([legacy, global, local], other)).toEqual([legacy, global]);
+  });
+});
 
 describe("partitionStashAttachments", () => {
   it("keeps attachments within the budget and reports dropped names in order", () => {

@@ -13014,5 +13014,10 @@
       "v": "v"
     },
     " de plus dans Éléments associés"
-  ]
+  ],
+  "855a58f9c33225b4": "Originating thread",
+  "cfcb822802ea876c": "Open originating thread",
+  "21a392236b8f4581": "This thread",
+  "047da6345f82bffd": "Open a saved thread to stash a prompt there",
+  "51376d77c71b0ba8": "Composer: Stash to Thread"
 }

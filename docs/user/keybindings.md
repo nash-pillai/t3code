@@ -8,6 +8,10 @@ To free a default shortcut, choose **Unassign** from its row menu (**Reset to de
 
 ## Common composer shortcuts
 
+**Composer: Stash** keeps prompts in the local app’s global stash. To stash inside
+the current saved thread, bind **Composer: Stash to Thread** in Settings → Keybindings.
+Global entries created in a saved thread link back to that thread.
+
 | Action                      | Default           | Notes                                                              |
 | --------------------------- | ----------------- | ------------------------------------------------------------------ |
 | Start / finish dictation    | `mod+shift+d`     | `Esc` discards. See [Voice input](./voice-input.md).               |

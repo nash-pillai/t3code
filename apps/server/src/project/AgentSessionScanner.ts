@@ -13,6 +13,7 @@ import {
   type AgentSessionProjectCandidate,
   type AgentSessionProjectGit,
   type AgentSessionScanResult,
+  type AgentSessionSelection,
   type ProviderInstanceConfig,
 } from "@t3tools/contracts";
 import * as Clock from "effect/Clock";
@@ -205,7 +206,12 @@ const decodeCodexSessionIndexEntry = Schema.decodeUnknownOption(
 
 type DecodedTranscriptRecord = typeof TranscriptRecord.Type;
 
+interface AgentSessionImportSelection {
+  readonly sessions?: ReadonlyArray<AgentSessionSelection> | undefined;
+}
+
 interface AgentSessionTranscriptMetadata {
+  readonly fullHistory?: boolean;
   readonly source: AgentSessionSource;
   readonly providerInstanceId: ProviderInstanceId;
   readonly fallbackSessionId: string;
@@ -249,6 +255,7 @@ export class AgentSessionScanner extends Context.Service<
     readonly recentThreads: (
       workspaceRoot: string,
       completedSources?: ReadonlyArray<AgentSessionImportSource>,
+      selection?: AgentSessionImportSelection,
     ) => Stream.Stream<AgentSessionRecentThread, AgentSessionScanError>;
   }
 >()("t3/project/AgentSessionScanner") {}
@@ -661,7 +668,7 @@ function parseAgentSessionRecords(
     hasAssistantMessage ||= message.role === "assistant";
     conversationMessageCount += 1;
     messages.push(message);
-    if (messages.length > MAX_IMPORTED_MESSAGES) messages.shift();
+    if (!input.fullHistory && messages.length > MAX_IMPORTED_MESSAGES) messages.shift();
   };
 
   const hasMatchingCodexEventInTurn = (text: string) => {
@@ -806,7 +813,10 @@ function parseAgentSessionRecords(
       claudeFields.customTitle ?? title ?? derivedTitle ?? bareCommandTitle ?? "Imported thread",
     model,
     createdAt: retainedMessages[0]?.createdAt ?? fallbackTimestamp,
-    updatedAt: fallbackTimestamp,
+    updatedAt:
+      input.source === "codex"
+        ? (retainedMessages.at(-1)?.createdAt ?? fallbackTimestamp)
+        : fallbackTimestamp,
     messages: retainedMessages,
     omittedMessageCount: conversationMessageCount + droppedMessageCount - retainedMessages.length,
   };
@@ -2175,6 +2185,7 @@ export const make = Effect.gen(function* () {
   const prepareRecentThreads = Effect.fn("AgentSessionScanner.prepareRecentThreads")(function* (
     workspaceRoot: string,
     completedSources: ReadonlyArray<AgentSessionImportSource>,
+    selection?: AgentSessionImportSelection,
   ) {
     const root = path.resolve(expandHomePath(workspaceRoot, homeDir));
     const realRoot = yield* fileSystem.realPath(root).pipe(Effect.orElseSucceed(() => root));
@@ -2235,6 +2246,11 @@ export const make = Effect.gen(function* () {
       readonly transcript: RawCandidate["transcripts"][number] & { readonly mtimeMs: number };
     }> = [];
     for (const candidate of candidates) {
+      if (selection !== undefined && candidate.source !== "codex") continue;
+      const sessionIds = selection?.sessions
+        ?.filter((session) => session.providerInstanceId === candidate.providerInstanceId)
+        .map((session) => session.providerSessionId);
+      if (sessionIds?.length === 0) continue;
       const expanded = expandHomePath(candidate.cwd.trim(), homeDir);
       if (!path.isAbsolute(expanded)) continue;
       const resolved = path.resolve(expanded);
@@ -2243,11 +2259,13 @@ export const make = Effect.gen(function* () {
       for (const transcript of candidate.transcripts) {
         if (
           transcript.mtimeMs === null ||
-          transcript.mtimeMs < cutoffMs ||
+          (selection === undefined && transcript.mtimeMs < cutoffMs) ||
           transcript.mtimeMs > nowMs
         ) {
           continue;
         }
+        const id = CODEX_ROLLOUT_ID_PATTERN.exec(transcript.filePath)?.[1];
+        if (id !== undefined && sessionIds !== undefined && !sessionIds.includes(id)) continue;
         eligibleTranscripts.push({
           candidate,
           transcript: { ...transcript, mtimeMs: transcript.mtimeMs },
@@ -2407,6 +2425,7 @@ export const make = Effect.gen(function* () {
                   : ".jsonl",
               ),
               lastActiveAtMs: transcript.mtimeMs,
+              fullHistory: selection?.sessions !== undefined,
             },
             inheritedRecords === null
               ? snapshot.records
@@ -2424,6 +2443,15 @@ export const make = Effect.gen(function* () {
           if (parsedThread === null) {
             return Option.some<AgentSessionRecentThread>({ _tag: "Skipped" });
           }
+          if (
+            selection?.sessions &&
+            !selection.sessions.some(
+              (session) =>
+                session.providerInstanceId === parsedThread.providerInstanceId &&
+                session.providerSessionId === parsedThread.providerSessionId,
+            )
+          )
+            return Option.none<AgentSessionRecentThread>();
           // Unusable transcripts still cost bytes, but charging a slot would block older
           // sessions on every retry because those files are never recorded as imported.
           transcriptsRemaining -= 1;
@@ -2464,7 +2492,8 @@ export const make = Effect.gen(function* () {
   const recentThreads: AgentSessionScanner["Service"]["recentThreads"] = (
     workspaceRoot,
     completedSources = [],
-  ) => Stream.unwrap(prepareRecentThreads(workspaceRoot, completedSources));
+    selection,
+  ) => Stream.unwrap(prepareRecentThreads(workspaceRoot, completedSources, selection));
 
   return AgentSessionScanner.of({ scan, recentThreads });
 });

@@ -28,6 +28,13 @@ T3 Code scans directories used by Claude Code, Codex, and Pi (turn on Pi under *
 - Git repositories active in the last 30 days with at least three conversations are pre-selected (excluding already-added projects, Codex scratch directories, and `Downloads`). Use **Review all** to customize the selection.
 - Conversations active in the last 30 days are imported so you can continue them in T3 Code.
 
+### Choose Codex conversations
+
+In **Review all**, select a project and choose **Choose Codex threads**. Mark
+the conversations you want, then start the import. This imports their complete
+available message text within the transcript size and record limits. The thread
+list shows the time of the original last message.
+
 ### Import limits
 
 Conversation import is best-effort:

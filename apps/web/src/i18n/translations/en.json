@@ -13023,5 +13023,9 @@
       "v": "v"
     },
     " more in Linked items"
-  ]
+  ],
+  "8dc8c311f21e9fb6": "Choose Codex threads for {project}",
+  "fd6fe922194605c9": "Could not load Codex threads.",
+  "6fcdf2fce515d5b8": "Loading Codex threads…",
+  "c200725c2f0abb7c": "Use default project import"
 }

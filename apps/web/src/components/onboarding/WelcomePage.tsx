@@ -1,3 +1,5 @@
+import type { AgentSessionSelection } from "@t3tools/contracts";
+import { useEnvironmentQuery } from "../../state/query";
 import { useAuth } from "@clerk/react";
 import { useAtomValue } from "@effect/atom-react";
 import type {
@@ -82,7 +84,7 @@ import {
   welcomeImportSelectionKey,
 } from "../../onboarding/welcomeState";
 import { newProjectId, randomUUID } from "../../lib/utils";
-import { agentSessionImport } from "../../state/agentSessions";
+import { agentSessionImport, agentSessionScan } from "../../state/agentSessions";
 import { readProjects, useProjects, waitForProject } from "../../state/entities";
 import { useEnvironments, usePrimaryEnvironmentId } from "../../state/environments";
 import { managedTelemetryOffMessage, useManagedPolicy } from "../../state/managedPolicy";
@@ -816,6 +818,8 @@ function ProjectsSection({
     selected,
     selectedKeys,
     setSelectedKeys,
+    codexSelections,
+    setCodexSelections,
     visibleImportError,
   } = projectImport;
   if (scan === undefined) return null;
@@ -953,6 +957,21 @@ function ProjectsSection({
                 selectedKeys={selectedKeys}
                 onSelectionChange={setSelectedKeys}
               />
+              {selected
+                .filter((candidate) => candidate.sources.includes("codex"))
+                .map((candidate) => (
+                  <CodexImportSelection
+                    key={candidate.key}
+                    candidate={candidate}
+                    selection={codexSelections[candidate.key]}
+                    onChange={(next) =>
+                      setCodexSelections((previous) => ({
+                        ...previous,
+                        [candidate.key]: next,
+                      }))
+                    }
+                  />
+                ))}
             </div>
           </ScrollArea>
         </fieldset>
@@ -1499,6 +1518,9 @@ function useProjectImport({
   const gt = useGT();
   const createProject = useAtomCommand(projectEnvironment.create, { reportFailure: false });
   const importThreads = useAtomCommand(agentSessionImport, { reportFailure: false });
+  const [codexSelections, setCodexSelections] = useState<
+    Readonly<Record<string, ReadonlyArray<AgentSessionSelection> | undefined>>
+  >({});
   const importWarningRef = useRef("");
   // Per project, so a retry that skips finished projects still counts their threads.
   const importedThreadsRef = useRef(new Map<string, number>());
@@ -1670,7 +1692,13 @@ function useProjectImport({
         }
         const threadImportResult = await importThreads({
           environmentId,
-          input: { projectId, expectedWorkspaceRoot: candidate.path },
+          input: {
+            projectId,
+            expectedWorkspaceRoot: candidate.path,
+            ...(codexSelections[candidate.key] === undefined
+              ? {}
+              : { codexSessions: codexSelections[candidate.key] }),
+          },
         });
         if (importGeneration !== importGenerationRef.current) return false;
         if (threadImportResult._tag === "Success") {
@@ -1740,6 +1768,8 @@ function useProjectImport({
     selected,
     selectedKeys,
     setSelectedKeys,
+    codexSelections,
+    setCodexSelections,
     visibleImportError,
     runImport,
     finishAfterImport,
@@ -1750,6 +1780,67 @@ type ImportCandidate = AgentSessionProjectCandidate & {
   readonly environmentId: EnvironmentId;
   readonly key: string;
 };
+
+function CodexImportSelection({
+  candidate,
+  selection,
+  onChange,
+}: {
+  readonly candidate: ImportCandidate;
+  readonly selection: ReadonlyArray<AgentSessionSelection> | undefined;
+  readonly onChange: (next: ReadonlyArray<AgentSessionSelection> | undefined) => void;
+}) {
+  const gt = useGT();
+  const [open, setOpen] = useState(false);
+  const sessions = useEnvironmentQuery(
+    open
+      ? agentSessionScan({
+          environmentId: candidate.environmentId,
+          input: { codexSessionsFor: candidate.path },
+        })
+      : null,
+  );
+  const keyOf = (session: AgentSessionSelection) =>
+    JSON.stringify([session.providerInstanceId, session.providerSessionId]);
+  const picked = new Set(selection?.map(keyOf));
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger render={<Button variant="ghost-muted" size="xs" />}>
+        {gt("Choose Codex threads for {project}", { project: candidate.title })}
+      </CollapsibleTrigger>
+      <CollapsiblePanel>
+        <div className="space-y-1 px-3 py-2">
+          {sessions.error ? <p role="alert">{gt("Could not load Codex threads.")}</p> : null}
+          {sessions.isPending ? <p role="status">{gt("Loading Codex threads…")}</p> : null}
+          {(sessions.data?.codexSessions ?? []).map((session) => (
+            <label key={keyOf(session)} className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={picked.has(keyOf(session))}
+                onCheckedChange={(checked) => {
+                  const { providerInstanceId, providerSessionId } = session;
+                  onChange(
+                    checked
+                      ? [...(selection ?? []), { providerInstanceId, providerSessionId }]
+                      : (selection ?? []).filter((entry) => keyOf(entry) !== keyOf(session)),
+                  );
+                }}
+              />
+              <span className="min-w-0 flex-1 truncate">{session.title}</span>
+              <time className="text-xs text-muted-foreground" dateTime={session.updatedAt}>
+                {new Date(session.updatedAt).toLocaleDateString()}
+              </time>
+            </label>
+          ))}
+          {selection !== undefined ? (
+            <Button size="xs" variant="ghost-muted" onClick={() => onChange(undefined)}>
+              <T>Use default project import</T>
+            </Button>
+          ) : null}
+        </div>
+      </CollapsiblePanel>
+    </Collapsible>
+  );
+}
 
 function ImportCandidateList({
   candidates,

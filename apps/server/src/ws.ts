@@ -3223,7 +3223,29 @@ export const layerWsRpc = (
           ).pipe(Effect.andThen(taskFolders.layoutCommands(input.projectId))),
         [WS_METHODS.attachmentsCreateUploadUrl]: (input) => issueAttachmentUploadUrl(input),
         [WS_METHODS.attachmentsDelete]: (input) => deletePendingAttachment(input.attachmentId),
-        [WS_METHODS.agentSessionsScan]: () => agentSessionScanner.scan,
+        [WS_METHODS.agentSessionsScan]: (input) =>
+          input.codexSessionsFor === undefined
+            ? agentSessionScanner.scan
+            : authorizeEffect(
+                AuthOrchestrationOperateScope,
+                agentSessionScanner.recentThreads(input.codexSessionsFor, [], {}).pipe(
+                  Stream.filter((outcome) => outcome._tag === "Importable"),
+                  Stream.map(({ thread }) => ({
+                    providerInstanceId: thread.providerInstanceId,
+                    providerSessionId: thread.providerSessionId,
+                    title: thread.title,
+                    updatedAt: thread.updatedAt,
+                  })),
+                  Stream.runCollect,
+                  Effect.flatMap((codexSessions) =>
+                    Effect.map(DateTime.now, (now) => ({
+                      candidates: [],
+                      scannedAt: DateTime.formatIso(now),
+                      codexSessions,
+                    })),
+                  ),
+                ),
+              ),
         [WS_METHODS.agentSessionsImport]: (input) =>
           agentSessionImporter.importRecentAgentThreads(input),
         [WS_METHODS.assetsCreateUrl]:

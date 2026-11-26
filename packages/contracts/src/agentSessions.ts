@@ -20,7 +20,15 @@ export const AgentSessionImportSource = Schema.Struct({
 });
 export type AgentSessionImportSource = typeof AgentSessionImportSource.Type;
 
-export const AgentSessionScanInput = Schema.Struct({});
+export const AgentSessionSelection = Schema.Struct({
+  providerInstanceId: ProviderInstanceId,
+  providerSessionId: TrimmedNonEmptyString,
+});
+export type AgentSessionSelection = typeof AgentSessionSelection.Type;
+
+export const AgentSessionScanInput = Schema.Struct({
+  codexSessionsFor: Schema.optional(TrimmedNonEmptyString),
+});
 export type AgentSessionScanInput = typeof AgentSessionScanInput.Type;
 
 export const AgentSessionProjectGit = Schema.Struct({
@@ -44,6 +52,15 @@ export type AgentSessionProjectCandidate = typeof AgentSessionProjectCandidate.T
 export const AgentSessionScanResult = Schema.Struct({
   candidates: Schema.Array(AgentSessionProjectCandidate),
   scannedAt: IsoDateTime,
+  codexSessions: Schema.optional(
+    Schema.Array(
+      Schema.Struct({
+        ...AgentSessionSelection.fields,
+        title: TrimmedNonEmptyString,
+        updatedAt: IsoDateTime,
+      }),
+    ),
+  ),
   truncated: Schema.optional(Schema.Boolean),
 });
 export type AgentSessionScanResult = typeof AgentSessionScanResult.Type;
@@ -51,6 +68,9 @@ export type AgentSessionScanResult = typeof AgentSessionScanResult.Type;
 export const AgentSessionImportInput = Schema.Struct({
   projectId: ProjectId,
   expectedWorkspaceRoot: Schema.optional(TrimmedNonEmptyString),
+  codexSessions: Schema.optional(
+    Schema.Array(AgentSessionSelection).check(Schema.isMaxLength(100)),
+  ),
 });
 export type AgentSessionImportInput = typeof AgentSessionImportInput.Type;
 

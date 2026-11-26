@@ -122,6 +122,7 @@ export interface DraftState {
   readonly scheduleMode: ScheduleMode;
   readonly intervalMinutes: string;
   readonly timeOfDay: string;
+  readonly missedRun?: "skip" | "run_once" | undefined;
   /** Local date and time as a `datetime-local` input value, such as 2026-11-02T15:00. */
   readonly runAt: string;
   /** The stored ISO run time, sent back unchanged when the field was not edited. */
@@ -304,6 +305,7 @@ export function scheduleFromDraft(draft: DraftState): ScheduledTaskUpsertSchedul
   return {
     type: "fixed_time",
     timeOfDay: draft.timeOfDay,
+    ...(draft.missedRun === undefined ? {} : { missedRun: draft.missedRun }),
     ...(selectedEveryDay ? {} : { weekdays: [...draft.weekdays].toSorted() }),
   };
 }
@@ -325,6 +327,7 @@ export function taskToDraft(task: ScheduledTask): DraftState {
       schedule.type === "interval" ? String(Math.max(1, schedule.everyMs / 60_000)) : "15",
     // A time input shows nothing for an unpadded hour such as 9:05, which agents may save.
     timeOfDay: schedule.type === "fixed_time" ? schedule.timeOfDay.padStart(5, "0") : "09:00",
+    missedRun: schedule.type === "fixed_time" ? schedule.missedRun : undefined,
     runAt: schedule.type === "once" ? toDateTimeLocalValue(new Date(schedule.runAt)) : "",
     savedRunAt: schedule.type === "once" ? schedule.runAt : "",
     weekdays,

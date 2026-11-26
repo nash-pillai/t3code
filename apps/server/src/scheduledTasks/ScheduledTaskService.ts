@@ -1303,6 +1303,9 @@ export const layer = Layer.effect(
         WHERE task_id = ${task.id}
           AND next_run_at IS ${task.nextRunAt}
           AND last_run_at IS ${task.lastRunAt}
+          AND json_extract(schedule_json, '$.missedRun') IS ${
+            task.schedule.type === "fixed_time" ? (task.schedule.missedRun ?? null) : null
+          }
         RETURNING task_id
       `.pipe(
         Effect.mapError((cause) =>
@@ -1550,7 +1553,12 @@ export const layer = Layer.effect(
             }
           : input.schedule.type === "once"
             ? { type: "once", runAt: iso(DateTime.makeUnsafe(input.schedule.runAt)) }
-            : input.schedule;
+            : input.schedule.type === "fixed_time" &&
+                input.schedule.missedRun === undefined &&
+                existingTask?.schedule.type === "fixed_time" &&
+                existingTask.schedule.missedRun !== undefined
+              ? { ...input.schedule, missedRun: existingTask.schedule.missedRun }
+              : input.schedule;
       const webhook =
         input.schedule.type === "webhook"
           ? yield* Effect.gen(function* () {

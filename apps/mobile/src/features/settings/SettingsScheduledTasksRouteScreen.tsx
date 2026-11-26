@@ -1279,6 +1279,21 @@ function TaskForm({
                   });
                 }}
               />
+              <View className="min-h-14 flex-row items-center justify-between gap-4 border-t border-border-subtle px-4 py-3">
+                <Text textRole="body" className="text-foreground">
+                  <T>Run once if missed</T>
+                </Text>
+                <ThemedSwitch
+                  accessibilityLabel={gt("Run once if missed")}
+                  value={draft.schedule.missedRun === "run_once"}
+                  onValueChange={(enabled) =>
+                    setDraft((current) => ({
+                      ...current,
+                      schedule: { ...current.schedule, missedRun: enabled ? "run_once" : "skip" },
+                    }))
+                  }
+                />
+              </View>
             </>
           ) : draft.schedule.mode === "webhook" && webhookDenial !== undefined && draft.enabled ? (
             <Text className="border-t border-border-subtle px-4 py-3 text-sm text-foreground-muted">

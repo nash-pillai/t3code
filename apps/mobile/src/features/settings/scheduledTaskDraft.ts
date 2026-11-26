@@ -55,6 +55,7 @@ export function scheduledTaskDefaultModel(
 export type ScheduleDraft = {
   readonly mode: "fixed_time" | "once" | "interval" | "webhook";
   readonly timeOfDay: string;
+  readonly missedRun?: "skip" | "run_once" | undefined;
   /** ISO time for a one-time run. Empty until the user picks the "Once" mode. */
   readonly runAt: string;
   readonly weekdays: ReadonlyArray<number>;
@@ -90,6 +91,7 @@ export function scheduleDraftForTask(task: Pick<ScheduledTask, "schedule">): Sch
       return {
         ...DEFAULT_SCHEDULE,
         timeOfDay: task.schedule.timeOfDay,
+        missedRun: task.schedule.missedRun,
         weekdays: task.schedule.weekdays?.length
           ? [...new Set(task.schedule.weekdays)].sort((a, b) => a - b)
           : [0, 1, 2, 3, 4, 5, 6],
@@ -193,6 +195,7 @@ export function scheduleFromDraft(draft: ScheduleDraft): ScheduledTaskUpsertSche
   return {
     type: "fixed_time",
     timeOfDay: draft.timeOfDay,
+    ...(draft.missedRun === undefined ? {} : { missedRun: draft.missedRun }),
     ...(weekdays.length === 7 ? {} : { weekdays }),
   };
 }

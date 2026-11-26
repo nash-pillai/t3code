@@ -50,6 +50,10 @@ Enable **Settings → Source control & issues → Automatically pull** to fast-f
 
 ## Scheduled tasks and webhooks
 
+For fixed-time tasks, turn on **Run once if missed** to catch up when the server
+returns. One run covers any missed slots. The default skips a fixed-time run
+once it is more than ten minutes late.
+
 Create and manage scheduled tasks in **Settings → Scheduled tasks** (web, desktop, and mobile).
 
 - **Schedules**: Recurring fixed-time schedules use the target environment's time zone. **Once** uses your local time zone (runs on reconnect if offline).

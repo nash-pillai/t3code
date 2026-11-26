@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 
-import { isSameSchedule, nextScheduledRunAt } from "./Schedule.ts";
+import { isMissedFixedTimeRun, isSameSchedule, nextScheduledRunAt } from "./Schedule.ts";
 
 describe("scheduled task schedule calculation", () => {
   it("skips to the next matching fixed-time weekday", () => {
@@ -24,6 +24,16 @@ describe("scheduled task schedule calculation", () => {
     expect(parts?.weekDay).toBe(1);
     expect(parts?.hour).toBe(9);
     expect(parts?.minute).toBe(0);
+  });
+
+  it("lets only opted-in fixed-time schedules catch up after the grace period", () => {
+    const dueAt = DateTime.makeUnsafe("2026-11-25T09:00:00Z");
+    const now = DateTime.makeUnsafe("2026-11-26T15:00:00Z");
+    const schedule = { type: "fixed_time", timeOfDay: "09:00" } as const;
+    expect(isMissedFixedTimeRun(schedule, dueAt, now)).toBe(true);
+    expect(isMissedFixedTimeRun({ ...schedule, missedRun: "skip" }, dueAt, now)).toBe(true);
+    expect(isMissedFixedTimeRun({ ...schedule, missedRun: "run_once" }, dueAt, now)).toBe(false);
+    expect(isSameSchedule(schedule, { ...schedule, missedRun: "run_once" })).toBe(true);
   });
 
   it("compares schedules structurally", () => {

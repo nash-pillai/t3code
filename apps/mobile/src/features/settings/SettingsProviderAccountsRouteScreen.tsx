@@ -35,6 +35,7 @@ import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActi
 import { useSettingsEnvironmentMenu } from "./components/SettingsEnvironmentFilterHeader";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SettingsSection } from "./components/SettingsSection";
+import { CodexAccountSettings } from "./CodexAccountSettings";
 import { AddClaudeAccount, ClaudeAccount } from "./ClaudeAccounts";
 import { CLAUDE_DRIVER } from "./claude-accounts";
 import { useSettingsEnvironmentFilter, type SettingsTarget } from "./settings-environment-filter";
@@ -79,6 +80,16 @@ export function SettingsProviderAccountsRouteScreen() {
                   providers={managedProviders(environment, providersByEnvironment)}
                 />
               )}
+              {managedProviders(environment, providersByEnvironment)
+                .filter((provider) => provider.driver === "codex" && !canManageProvider(provider))
+                .map((provider) => (
+                  <CodexAccountSettings
+                    key={provider.instanceId}
+                    environment={environment}
+                    provider={provider}
+                    readOnly={!permittedEnvironments.has(environment.environmentId)}
+                  />
+                ))}
             </SettingsSection>
           ))
         )}

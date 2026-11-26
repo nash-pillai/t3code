@@ -5710,5 +5710,10 @@
   "99451a5d2d40440f": "Withdrawn by {by}.",
   "3ee30a50b70fffab": "Withdrawn by {by}: {reason}",
   "201490988858b511": "withdrawn by {by}",
-  "46d614fa7b4bf1e5": "Workflow runs"
+  "46d614fa7b4bf1e5": "Workflow runs",
+  "af0e13ee7adf5b2e": "CODEX_HOME path",
+  "bc8971b240b10317": "Shadow home path",
+  "d118c06deaf33a65": "Launch arguments",
+  "711263aba2948485": "Could not save Codex settings.",
+  "decf8c9d0a591dab": "CLI sign-in"
 }

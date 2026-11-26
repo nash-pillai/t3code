@@ -35,6 +35,30 @@ function setup() {
   } satisfies ComponentProps<typeof ComposerPrimaryActions>;
 }
 
+it.each([
+  { name: "Submit message", isRunning: false, followUpBehavior: "steer" },
+  { name: "Steer message", isRunning: true, followUpBehavior: "steer" },
+  { name: "Queue message", isRunning: true, followUpBehavior: "queue" },
+] as const)("opens the send context menu for $name without submitting", async (input) => {
+  const props = setup();
+  const contextMenu = vi.fn();
+  await using screen = await render(
+    <ComposerPrimaryActions
+      {...props}
+      isRunning={input.isRunning}
+      followUpBehavior={input.followUpBehavior}
+      hasSendableContent
+      onSendContextMenu={contextMenu}
+    />,
+  );
+  const button = screen.getByRole("button", { name: input.name }).element();
+  button.dispatchEvent(
+    new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2 }),
+  );
+  expect(contextMenu).toHaveBeenCalledOnce();
+  expect(props.onSubmitMessage).not.toHaveBeenCalled();
+});
+
 it.each(["resume", "draft", "question"] as const)(
   "keeps repeat Stop clicks from reaching the action that replaces it (%s)",
   async (mode) => {

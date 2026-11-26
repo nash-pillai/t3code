@@ -1,6 +1,8 @@
 import { copySnapshot } from "./copySnapshot";
 import { VoiceInputSetup } from "./VoiceInputSetup";
 import { useComposerTypingGuard } from "./useComposerTypingGuard";
+import { useComposerPromptSchedule } from "./useComposerPromptSchedule";
+import { openContextMenuFromKeyboard } from "../../contextMenuSource";
 import { insertAttachmentReferencesForDraft } from "./composerAttachmentReferences";
 import type { ComposerAttachmentInsertion } from "../composerAttachmentInsertion";
 import { DESKTOP_PASTE_AS_TEXT_EVENT } from "../../lib/desktopPasteAsText";
@@ -46,6 +48,7 @@ import {
   EnvironmentRequestInvalidError,
   AuthOrchestrationOperateScope,
   clampManagedRuntimeMode,
+  DEFAULT_PROVIDER_INTERACTION_MODE,
   ProviderDriverKind,
   ProviderInstanceId,
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
@@ -3405,6 +3408,10 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
         }
       },
       openControl: (command) => {
+        if (command === "composer.attachFiles") {
+          composerAttachInputRef.current?.click();
+          return;
+        }
         if (composerBlurFrameRef.current !== null) {
           window.cancelAnimationFrame(composerBlurFrameRef.current);
           composerBlurFrameRef.current = null;
@@ -3644,6 +3651,63 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
   const composerAttachButton = showComposerAttachAction ? (
     <ComposerAttachButton onOpenPicker={() => composerAttachInputRef.current?.click()} />
   ) : null;
+  const scheduling = useComposerPromptSchedule({
+    environmentId,
+    targetKey: composerDraftTargetKey,
+    readTarget:
+      canOperateThread &&
+      activeProjectId &&
+      prompt.trim() &&
+      composerContextRecords.size === 0 &&
+      composerDraft.persistedAttachments.length === 0 &&
+      preparingComposerImages.length === 0 &&
+      !composerDraft.replyTo &&
+      !isEditingQueuedMessage &&
+      !noProviderAvailable &&
+      multipleModelSelections === null &&
+      runtimeModeCeilingDenial === undefined
+        ? () => {
+            const draft = draftId
+              ? useComposerDraftStore.getState().draftThreadsByThreadKey[draftId]
+              : undefined;
+            const threadId = activeThread?.id ?? null;
+            const worktreePath = activeThread?.worktreePath ?? draft?.worktreePath;
+            const branch = draft?.branch;
+            return {
+              prompt: prompt.trim(),
+              projectId: activeProjectId,
+              threadId,
+              threadMode: threadId ? "continue" : "new_thread",
+              workspaceStrategy: worktreePath
+                ? { type: "existing_worktree", worktreePath }
+                : !threadId && draft?.envMode === "worktree"
+                  ? {
+                      type: "worktree",
+                      baseRef: branch ?? "HEAD",
+                      startFromOrigin: draft.startFromOrigin,
+                      ...(draft.worktreeRepositories
+                        ? { repositories: draft.worktreeRepositories.map((path) => ({ path })) }
+                        : {}),
+                    }
+                  : { type: "root", ...(branch && !threadId ? { branch } : {}) },
+              modelSelection: selectedModelSelection,
+              runtimeMode: compatibleRuntimeMode,
+              interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
+              creationSource: "web",
+            };
+          }
+        : null,
+    onScheduled: ({ prompt: scheduledPrompt }) => {
+      const state = getComposerDraft(composerDraftTarget);
+      if (
+        state?.prompt.trim() === scheduledPrompt &&
+        !composerDraftHasUserContent({ ...state, prompt: "" })
+      ) {
+        if (composerDraftTargetKeyRef.current === composerDraftTargetKey) promptRef.current = "";
+        setComposerDraftPrompt(composerDraftTarget, "");
+      }
+    },
+  });
   return (
     <form
       ref={composerFormRef}
@@ -3811,6 +3875,15 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                     disabled={collapsedComposerPrimaryActionDisabled}
                     aria-label={collapsedComposerPrimaryActionLabel}
                     aria-busy={composerSendHeld || isSendBusy || undefined}
+                    aria-haspopup={
+                      !showResumeAction && scheduling.onContextMenu ? "menu" : undefined
+                    }
+                    onContextMenu={showResumeAction ? undefined : scheduling.onContextMenu}
+                    onKeyDown={
+                      !showResumeAction && scheduling.onContextMenu
+                        ? openContextMenuFromKeyboard
+                        : undefined
+                    }
                     onPointerDown={(event) => event.preventDefault()}
                     onClick={(event) => {
                       event.stopPropagation();
@@ -4132,6 +4205,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                     preserveComposerFocusOnPointerDown={isMobileViewport}
                     isEditingQueuedMessage={isEditingQueuedMessage}
                     onSubmitMessage={handleSubmitMessageStable}
+                    onSendContextMenu={scheduling.onContextMenu}
                     onResume={onResume}
                     onPreviousPendingQuestion={onPreviousActivePendingUserInputQuestion}
                     onInterrupt={handleInterruptPrimaryActionStable}
@@ -4206,6 +4280,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
           </div>
         </ComposerSurface.Main>
       </div>
+      {scheduling.dialog}
     </form>
   );
 });

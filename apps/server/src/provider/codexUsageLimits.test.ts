@@ -16,6 +16,29 @@ import {
 const checkedAt = "2026-07-18T10:00:00.000Z";
 
 describe("codexRateLimitsToLimits", () => {
+  it("keeps purchased credits independent of the account's banked resets", () => {
+    expect(
+      codexRateLimitsToLimits({
+        checkedAt,
+        snapshot: { credits: { balance: "900" } },
+        rateLimitsByLimitId: { codex: { credits: { balance: "0" } } },
+        resetCredits: { availableCount: 2 },
+      }),
+    ).toMatchObject({ purchasedCredits: "0", resetCredits: { availableCount: 2 } });
+    expect(
+      codexRateLimitsToLimits({
+        checkedAt,
+        snapshot: { credits: { unlimited: true } },
+      }).purchasedCredits,
+    ).toBe("unlimited");
+    expect(
+      codexRateLimitsToLimits({
+        checkedAt,
+        snapshot: { credits: { balance: "unavailable" } },
+      }).purchasedCredits,
+    ).toBeUndefined();
+  });
+
   it("shows an Enterprise monthly credit allowance in reads and notifications without a duration", () => {
     const snapshot = {
       limitId: "codex",

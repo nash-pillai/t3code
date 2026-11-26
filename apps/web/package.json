@@ -81,6 +81,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "saxes": "6.0.0",
+    "smol-toml": "1.9.1",
     "sql.js": "1.15.0",
     "tailwind-merge": "^3.4.0",
     "tiff": "7.1.3",

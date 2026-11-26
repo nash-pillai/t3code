@@ -34,6 +34,7 @@ export class DesktopUserDataInitializationError extends Schema.TaggedError<Deskt
 export const resolveUserDataPath = Effect.fn("desktop.userData.resolveUserDataPath")(
   function* (input: {
     readonly appDataDirectory: string;
+    readonly linuxProfileParent?: string | undefined;
     readonly isDevelopment: boolean;
     readonly platform: NodeJS.Platform;
   }) {
@@ -54,6 +55,21 @@ export const resolveUserDataPath = Effect.fn("desktop.userData.resolveUserDataPa
         );
     if (input.isDevelopment) {
       return (yield* inspect(legacyPath)) ? legacyPath : destinationPath;
+    }
+    if (input.platform === "linux" && input.linuxProfileParent !== undefined) {
+      const destination = path.join(input.linuxProfileParent, names.current);
+      if (destination === destinationPath || (yield* inspect(destination))) return destination;
+      if (!(yield* inspect(destinationPath))) return destination;
+      const inUse = yield* fs.readLink(path.join(destinationPath, "SingletonLock")).pipe(
+        Effect.as(true),
+        Effect.orElseSucceed(() => false),
+      );
+      if (inUse) return destinationPath;
+      return yield* fs.makeDirectory(input.linuxProfileParent, { recursive: true }).pipe(
+        Effect.andThen(fs.rename(destinationPath, destination)),
+        Effect.as(destination),
+        Effect.orElseSucceed(() => destinationPath),
+      );
     }
     // Chromium databases require their own profile for each running version.
     if (input.platform !== "win32") return destinationPath;

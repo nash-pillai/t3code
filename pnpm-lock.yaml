@@ -1255,6 +1255,9 @@ importers:
       saxes:
         specifier: 6.0.0
         version: 6.0.0
+      smol-toml:
+        specifier: 1.9.1
+        version: 1.9.1
       sql.js:
         specifier: 1.15.0
         version: 1.15.0

@@ -5710,5 +5710,15 @@
   "99451a5d2d40440f": "Withdrawn by {by}.",
   "3ee30a50b70fffab": "Withdrawn by {by}: {reason}",
   "201490988858b511": "withdrawn by {by}",
-  "46d614fa7b4bf1e5": "Workflow runs"
+  "46d614fa7b4bf1e5": "Workflow runs",
+  "82c0494f92de3e6e": "Run once if missed",
+  "28802448438c2f76": "Run once if missed",
+  "a764a8e49b9de8a7": "Unlimited",
+  "b9026479b10f4555": "Purchased credits",
+  "5e5a5147050d8d7d": "Memory sources",
+  "af0e13ee7adf5b2e": "CODEX_HOME path",
+  "bc8971b240b10317": "Shadow home path",
+  "d118c06deaf33a65": "Launch arguments",
+  "711263aba2948485": "Could not save Codex settings.",
+  "decf8c9d0a591dab": "CLI sign-in"
 }

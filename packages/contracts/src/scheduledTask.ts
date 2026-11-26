@@ -34,6 +34,12 @@ const ScheduledTaskIntervalSchedule = Schema.Struct({
 const ScheduledTaskFixedTimeSchedule = Schema.Struct({
   type: Schema.Literal("fixed_time"),
   timeOfDay: TimeOfDay,
+  missedRun: Schema.optional(
+    Schema.Literals(["skip", "run_once"]).annotate({
+      description:
+        "Whether to skip a missed run or catch up once after downtime. Defaults to skip.",
+    }),
+  ),
   weekdays: Schema.optional(
     Schema.Array(
       Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 6 })).annotate({

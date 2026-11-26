@@ -733,6 +733,20 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
                 <Text className="text-sm text-foreground-muted">{account.sourceLabel}</Text>
               )}
             </View>
+            {account.limits.purchasedCredits !== undefined ? (
+              <View className="gap-2 rounded-[24px] border-continuous bg-grouped-card p-4">
+                <Text className="text-sm font-t3-medium text-foreground">
+                  <T>Purchased credits</T>
+                </Text>
+                <Text selectable className="text-foreground tabular-nums">
+                  {account.limits.purchasedCredits === "unlimited"
+                    ? gt("Unlimited")
+                    : new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(
+                        Number(account.limits.purchasedCredits),
+                      )}
+                </Text>
+              </View>
+            ) : null}
             {account.redeem && account.limits.resetCredits ? (
               <View className="gap-3 rounded-[24px] border-continuous bg-grouped-card p-4">
                 <Text className="text-sm font-t3-medium text-foreground">

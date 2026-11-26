@@ -5,7 +5,7 @@ import {
   type ThreadId,
 } from "@t3tools/contracts";
 import { contextMenuSourceOf } from "~/contextMenuSource";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { scopeThreadRef, scopedThreadKey } from "@t3tools/client-runtime/environment";
 import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
 import {
   isAtomCommandInterrupted,
@@ -16,6 +16,7 @@ import { ChevronDownIcon } from "lucide-react";
 import {
   memo,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -41,6 +42,7 @@ import {
 } from "../WorkspaceBreadcrumb";
 import { observeResize } from "~/lib/observeResize";
 import { cn } from "~/lib/utils";
+import { registerMenuAction } from "../../shortcuts/dispatcher";
 import { textDirection } from "~/textDirection";
 import { useClientSettings } from "../../hooks/useSettings";
 import { GuestShareIndicator } from "./GuestShareControls";
@@ -174,6 +176,15 @@ export const ChatHeader = memo(function ChatHeader({
       title: activeThreadTitle,
     });
   };
+  const startRenameFromCommand = useEffectEvent(startRename);
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- route commands invoke the active header’s inline title editor
+  useEffect(() => {
+    if (!isServerThread) return;
+    return registerMenuAction(
+      `thread.rename:${scopedThreadKey(scopeThreadRef(activeThreadEnvironmentId, activeThreadId))}`,
+      () => startRenameFromCommand(),
+    );
+  }, [isServerThread, activeThreadEnvironmentId, activeThreadId]);
   const commitRename = (title: string) => {
     setRenaming(null);
     if (!readEnvironmentScope(activeThreadEnvironmentId, AuthOrchestrationOperateScope)) return;
@@ -336,6 +347,7 @@ export const ChatHeader = memo(function ChatHeader({
             <input
               autoFocus
               dir="auto"
+              data-thread-rename-input
               aria-label={gt("Thread title")}
               className="min-w-0 flex-1 rounded-sm bg-transparent text-sm font-medium text-foreground outline-none ring-1 ring-inset ring-ring/50 focus:ring-ring"
               defaultValue={renamingTitle}

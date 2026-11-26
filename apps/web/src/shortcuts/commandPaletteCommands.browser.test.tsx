@@ -16,6 +16,8 @@ const keybindings = compileResolvedKeybindingsConfig([
   { key: "mod+k", command: "commandPalette.toggle" },
   { key: "mod+alt+shift+t", command: "themeEditor.toggle" },
   { key: "mod+u", command: "usage.open" },
+  { key: "mod+shift+k", command: "settings.keybindings" },
+  { key: "mod+shift+b", command: "settings.browser" },
 ]);
 
 function MountedPalette() {
@@ -29,6 +31,22 @@ function setup() {
 }
 
 describe("command palette shortcuts", () => {
+  it("opens a settings page chosen by each bound command", async () => {
+    setup();
+    using _platform = vi.spyOn(navigator, "platform", "get").mockReturnValue("Linux x86_64");
+    await using screen = await render(<MountedPalette />, { router: "/" });
+    using navigation = vi.spyOn(screen.router!, "navigate").mockResolvedValue(undefined);
+    using commands = new DisposableStack();
+    commands.defer(
+      installCommandPaletteCommands(screen.router!, { keybindings: () => keybindings }),
+    );
+
+    await userEvent.keyboard("{Control>}{Shift>}K{/Shift}{/Control}");
+    expect(navigation).toHaveBeenLastCalledWith({ to: "/settings/keybindings" });
+    await userEvent.keyboard("{Control>}{Shift>}B{/Shift}{/Control}");
+    expect(navigation).toHaveBeenLastCalledWith({ to: "/settings/browser" });
+  });
+
   it("stay inert on routes without the palette", async () => {
     setup();
     using _platform = vi.spyOn(navigator, "platform", "get").mockReturnValue("Linux x86_64");

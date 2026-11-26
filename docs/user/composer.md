@@ -54,6 +54,10 @@ Shortcuts while a turn is running:
 
 Slash commands (such as `/compact` or `/context`) wait for the current turn to finish rather than steering into it. [Goal](#goals) commands are the exception.
 
+## Schedule a prompt for later
+
+On web or desktop, right-click **Send**, **Steer**, or **Queue** and choose **Schedule for later…**. Pick the date and time in your local time zone. The text prompt runs once in the current thread, or starts a new thread in the selected project if you were composing a new chat. Find it afterward in **Settings → Scheduled Tasks**.
+
 ## Queue messages offline on mobile
 
 Mobile keeps local copies of draft attachments so you can preview them and queue messages offline. Uploads resume on reconnect, and drafts/queued messages survive app restarts and T3 Connect sign-out (restored when signing back into the same account).

@@ -49,14 +49,26 @@ const makeRecovery = Effect.gen(function* () {
     (environment.platform === "darwin" && environment.isPackaged);
   if (!supported) return undefined;
   const runFork = Effect.runForkWith(yield* Effect.context<never>());
-  return DesktopBackendRecoveryProcess.make({
-    appDataDirectory: environment.appDataDirectory,
-    stateDir: environment.stateDir,
-    onRecovery: (pid) =>
-      runFork(logBackendPoolInfo("recovering a backend left by a previous desktop", { pid })),
-    onError: (operation) =>
-      runFork(logBackendPoolWarning("desktop backend recovery failed", { operation })),
-  });
+  const createRecovery = (appDataDirectory: string) =>
+    DesktopBackendRecoveryProcess.make({
+      appDataDirectory,
+      stateDir: environment.stateDir,
+      onRecovery: (pid) =>
+        runFork(logBackendPoolInfo("recovering a backend left by a previous desktop", { pid })),
+      onError: (operation) =>
+        runFork(logBackendPoolWarning("desktop backend recovery failed", { operation })),
+    });
+  const parent = environment.linuxRecoveryParent ?? environment.appDataDirectory;
+  const recovery = createRecovery(parent);
+  if (parent === environment.appDataDirectory) return recovery;
+  const legacy = createRecovery(environment.appDataDirectory);
+  return {
+    track: recovery.track,
+    recover: async (signal: AbortSignal) => {
+      await recovery.recover(signal);
+      if (!signal.aborted) await legacy.recover(signal);
+    },
+  };
 });
 
 export const recoverLocalBackend = makeRecovery.pipe(

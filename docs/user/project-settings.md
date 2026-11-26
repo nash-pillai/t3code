@@ -48,7 +48,19 @@ Enable automatic cleanup in **Settings → Worktrees → Cleanup** (off by defau
 
 Enable **Settings → Source control & issues → Automatically pull** to fast-forward clean default-branch checkouts from their configured upstream. Skips checkouts with local changes, untracked files, local commits, other branches, or no upstream.
 
+## Import a Codex Desktop schedule
+
+In web or desktop, open **Settings → Scheduled tasks → Import Codex schedule**.
+Choose one or more `automation.toml` files from your Codex Desktop automations folder.
+Review the prompt, destination, status, and run time for each task before saving. If the
+original thread has already been imported into the selected environment, T3
+Code can preselect it. Daily, weekly, and simple interval schedules are supported.
+
 ## Scheduled tasks and webhooks
+
+For fixed-time tasks, turn on **Run once if missed** to catch up when the server
+returns. One run covers any missed slots. The default skips a fixed-time run
+once it is more than ten minutes late.
 
 Create and manage scheduled tasks in **Settings → Scheduled tasks** (web, desktop, and mobile).
 

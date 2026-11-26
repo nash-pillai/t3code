@@ -1,4 +1,4 @@
-import { ComposerContextRecord, ForwardCompatibleArray } from "@t3tools/contracts";
+import { ComposerContextRecord, ForwardCompatibleArray, ScopedThreadRef } from "@t3tools/contracts";
 import * as Schema from "effect/Schema";
 import { create } from "zustand";
 
@@ -21,6 +21,9 @@ const StashEntrySchema = Schema.Struct({
   id: Schema.String,
   createdAt: Schema.String,
   prompt: Schema.String,
+  scope: Schema.optionalKey(Schema.Literals(["global", "thread"])),
+  origin: Schema.optionalKey(ScopedThreadRef),
+  originTitle: Schema.optionalKey(Schema.String),
   attachments: Schema.Array(PersistedComposerImageAttachment),
   files: Schema.optionalKey(Schema.Array(PersistedComposerFileAttachment)),
   droppedImageNames: Schema.Array(Schema.String),
@@ -29,6 +32,18 @@ const StashEntrySchema = Schema.Struct({
   records: Schema.optionalKey(ForwardCompatibleArray(ComposerContextRecord)),
 });
 export type PromptStashEntry = typeof StashEntrySchema.Type;
+
+export function stashEntriesForThread(
+  entries: ReadonlyArray<PromptStashEntry>,
+  thread: ScopedThreadRef,
+): ReadonlyArray<PromptStashEntry> {
+  return entries.filter(
+    (entry) =>
+      entry.scope !== "thread" ||
+      (entry.origin?.environmentId === thread.environmentId &&
+        entry.origin.threadId === thread.threadId),
+  );
+}
 
 const PersistedPromptStashState = Schema.Struct({
   entries: Schema.Array(StashEntrySchema),

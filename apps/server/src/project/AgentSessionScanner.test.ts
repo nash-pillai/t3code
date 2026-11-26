@@ -3805,6 +3805,40 @@ describe("parseAgentSessionTranscript", () => {
     expect(thread?.title).toBe(title);
   });
 
+  it("retains all text and the last message time for a selected Codex session", () => {
+    const lastMessage = "2026-08-24T12:00:00.000Z";
+    const contents = [
+      encodeTranscriptRecord({ type: "session_meta", payload: { id: "codex-session" } }),
+      encodeTranscriptRecord({
+        type: "event_msg",
+        timestamp: "2026-08-23T10:00:00.000Z",
+        payload: { type: "user_message", message: "Start this session" },
+      }),
+      ...Array.from({ length: 220 }, (_, index) =>
+        encodeTranscriptRecord({
+          type: "response_item",
+          timestamp: lastMessage,
+          payload: {
+            type: "message",
+            role: "assistant",
+            content: [{ type: "output_text", text: "Reply " + index }],
+          },
+        }),
+      ),
+    ].join("\n");
+    const thread = AgentSessionScanner.parseAgentSessionTranscript({
+      source: "codex",
+      providerInstanceId: ProviderInstanceId.make("codex"),
+      fallbackSessionId: "unused",
+      lastActiveAtMs: Date.parse("2026-08-27T00:00:00.000Z"),
+      fullHistory: true,
+      contents,
+    });
+    expect(thread?.messages).toHaveLength(221);
+    expect(thread?.updatedAt).toBe(lastMessage);
+    expect(thread?.omittedMessageCount).toBe(0);
+  });
+
   it.each([199, 200])("keeps the canonical first prompt with %s later Codex messages", (count) => {
     const canonicalPrompt = "\n  Keep the canonical prompt  \n";
     const canonicalTimestamp = "2026-08-24T10:01:00.000Z";

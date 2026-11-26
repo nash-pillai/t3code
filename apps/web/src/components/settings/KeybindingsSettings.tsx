@@ -17,7 +17,6 @@ import { useLocation } from "@tanstack/react-router";
 import {
   type KeyboardEvent,
   type ReactNode,
-  type RefObject,
   useDeferredValue,
   useReducer,
   useRef,
@@ -140,11 +139,11 @@ function KeybindingPill({ shortcut }: { shortcut: KeybindingShortcut }) {
 function KeybindingsSearchInput({
   query,
   onChange,
-  inputRef,
+  focusOnOpen,
 }: {
   query: string;
   onChange: (next: string) => void;
-  inputRef: RefObject<HTMLInputElement | null>;
+  focusOnOpen: boolean;
 }) {
   const gt = useGT();
   return (
@@ -154,7 +153,8 @@ function KeybindingsSearchInput({
       </InputGroupAddon>
       {/* Native search inputs clear on Escape even during IME composition. */}
       <InputGroupInput
-        ref={inputRef}
+        id="keybindings-filter"
+        autoFocus={focusOnOpen}
         type="text"
         role="searchbox"
         enterKeyHint="search"
@@ -1551,7 +1551,6 @@ export function KeybindingsSettingsPanel() {
     availableEditors,
   );
   const [query, setQuery] = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const [savingCommand, setSavingCommand] = useState<KeybindingCommand | null>(null);
   const [isAddingBinding, setIsAddingBinding] = useState(false);
   const searchTargetId = useLocation({ select: (location) => location.hash.replace(/^#/, "") });
@@ -1711,7 +1710,7 @@ export function KeybindingsSettingsPanel() {
         headerAction={!isElectron ? <BrowserKeybindingNotice /> : null}
       >
         <div className="flex flex-wrap items-center gap-2 px-3 py-3 sm:px-4">
-          <KeybindingsSearchInput query={query} onChange={setQuery} inputRef={searchInputRef} />
+          <KeybindingsSearchInput query={query} onChange={setQuery} focusOnOpen={!searchTargetId} />
           <Button
             type="button"
             variant="outline"

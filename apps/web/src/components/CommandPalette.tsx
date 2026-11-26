@@ -406,6 +406,8 @@ function CommandPaletteDialog(props: {
       data-testid="command-palette"
       finalFocus={() => {
         if (restoreWorkspaceFocusFromPalette()) return false;
+        const rename = document.querySelector<HTMLInputElement>("[data-thread-rename-input]");
+        if (rename) return rename;
         const returnFocus = getCommandPaletteReturnFocus();
         if (returnFocus === false) return false;
         const composer = composerHandleRef?.current;

@@ -1,10 +1,12 @@
 import { msg, T, useGT, useMessages, Var } from "gt-react";
-import { BookmarkIcon, FileIcon, FileTextIcon } from "lucide-react";
+import { BookmarkIcon, FileIcon, FileTextIcon, LinkIcon } from "lucide-react";
 import { memo, useEffect, useEffectEvent, useRef, useState, type RefObject } from "react";
 import { assistantCitationsToPlainText } from "@t3tools/shared/assistantCitations";
 import { replaceComposerContextReferences } from "@t3tools/shared/composerContextReferences";
 import { composerFileLinksToPlainText } from "@t3tools/shared/composerInlineTokens";
 
+import { Link } from "@tanstack/react-router";
+import { buildThreadRouteParams } from "../../threadRoutes";
 import { RelativeTime } from "../RelativeTime";
 import { m, type MessageResolver } from "~/i18n/messages";
 import { cn } from "~/lib/utils";
@@ -126,6 +128,7 @@ export const ComposerStashMenu = memo(function ComposerStashMenu(props: {
       return;
     }
     if (event.key === "Enter") {
+      if (target instanceof Element && target.closest("a[href]")) return;
       // Let the delete button handle Enter instead of restoring its row.
       if (event.target instanceof HTMLElement && event.target.closest("button[aria-label]")) {
         return;
@@ -232,6 +235,26 @@ export const ComposerStashMenu = memo(function ComposerStashMenu(props: {
                   </button>
                 </ComposerBanner.Content>
                 <ComposerBanner.Actions>
+                  {entry.origin && entry.scope !== "thread" ? (
+                    <Link
+                      to="/$environmentId/$threadId"
+                      params={buildThreadRouteParams(entry.origin)}
+                      title={entry.originTitle ?? gt("Originating thread")}
+                      aria-label={gt("Open originating thread")}
+                      className="relative z-10 inline-flex shrink-0 items-center gap-1 text-muted-foreground hover:text-foreground"
+                      onClick={onClose}
+                    >
+                      <LinkIcon aria-hidden className="size-3" />
+                      {entry.originTitle ? (
+                        <span className="max-w-24 truncate max-sm:hidden">{entry.originTitle}</span>
+                      ) : null}
+                    </Link>
+                  ) : null}
+                  {entry.scope === "thread" ? (
+                    <span className="shrink-0 text-muted-foreground">
+                      <T>This thread</T>
+                    </span>
+                  ) : null}
                   {entry.pendingImageCount ? (
                     <span className="shrink-0 text-muted-foreground">
                       {gt(

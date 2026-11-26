@@ -8,6 +8,12 @@ To free a default shortcut, choose **Unassign** from its row menu (**Reset to de
 
 ## Common composer shortcuts
 
+Assign **Composer: Attach Files** in Settings → Keybindings to open the active composer’s file picker.
+
+**Composer: Stash** keeps prompts in the local app’s global stash. To stash inside
+the current saved thread, bind **Composer: Stash to Thread** in Settings → Keybindings.
+Global entries created in a saved thread link back to that thread.
+
 | Action                      | Default           | Notes                                                              |
 | --------------------------- | ----------------- | ------------------------------------------------------------------ |
 | Start / finish dictation    | `mod+shift+d`     | `Esc` discards. See [Voice input](./voice-input.md).               |
@@ -45,7 +51,7 @@ Remap under **Copy Link or Thread** and **Copy Number** in **Settings → Keybin
 
 ## Edit the configuration file
 
-Keybindings are stored on the environment's machine at `~/.t3/userdata/keybindings.json` as a JSON array:
+Keybindings are stored on the environment’s machine in `keybindings.json`. Use **Open keybindings file** from Settings → Keybindings to find it. On new Linux environments it lives under `$XDG_CONFIG_HOME/t3code`. The file contains a JSON array:
 
 ```json
 [
@@ -79,6 +85,13 @@ Combine with `!`, `&&`, `||`, and parentheses:
 The last matching rule in `keybindings.json` wins, even across different commands. Place more specific rules after general ones.
 
 ## Commands with special behavior
+
+Assign **Thread: Snooze**, **Thread: Rename**, **Thread: Archive**, and **Thread: Delete**
+to act on the open thread. Snooze opens the custom snooze dialog or wakes an already
+snoozed thread. The command palette also offers these actions for the open thread.
+
+Bind a `settings.<page>` command to open that Settings page. For example,
+`settings.keybindings` opens Keybindings and focuses its filter.
 
 - `thread.stop`: Interrupts the running turn (unbound by default).
 - `thread.regenerateTitle`: Regenerates the focused thread's title (unbound by default).

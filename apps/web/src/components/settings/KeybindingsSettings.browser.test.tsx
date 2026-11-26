@@ -141,6 +141,11 @@ describe("Esc in a shortcut recorder", () => {
   });
 });
 
+it("focuses the keybindings filter when the settings page opens", async () => {
+  await using _screen = await render(<KeybindingsSettingsPanel />);
+  await expect.element(page.getByRole("searchbox", { name: "Search keybindings" })).toHaveFocus();
+});
+
 it("unassigns a default shortcut and restores its condition when one is assigned again", async () => {
   const mutate = vi.fn(async () => ({ _tag: "Success", value: [] }));
   await vi.mocked(atomCommands.useAtomCommand).withImplementation(

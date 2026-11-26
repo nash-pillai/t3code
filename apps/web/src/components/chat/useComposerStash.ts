@@ -25,6 +25,7 @@ import {
   MAX_STASH_ENTRIES,
   type PromptStashEntry,
   partitionStashAttachments,
+  stashEntriesForThread,
   usePromptStashStore,
 } from "../../promptStashStore";
 import type { PendingUserInputProgress } from "../../pendingUserInput";
@@ -56,6 +57,7 @@ import { replaceComposerContextReferences } from "@t3tools/shared/composerContex
 import { resizeSnapShotSource } from "../../lib/snapShotSource";
 import { registerCommands } from "../../shortcuts/dispatcher";
 import { selectThreadTerminalUiState, useTerminalUiStateStore } from "../../terminalUiStateStore";
+import { readThreadShell } from "../../state/entities";
 import { toastManager } from "../ui/toast";
 import type { useComposerTriggerState } from "./useComposerTriggerState";
 import {
@@ -157,7 +159,8 @@ export function useComposerStash(input: {
   const [stashPulseKey, setStashPulseKey] = useState(0);
   const stashInFlightRef = useRef<Set<string>>(new Set());
 
-  const stashQueue = usePromptStashStore((state) => state.entries);
+  const allStashEntries = usePromptStashStore((state) => state.entries);
+  const stashQueue = stashEntriesForThread(allStashEntries, routeThreadRef);
   const stashEntryToQueue = usePromptStashStore((state) => state.stashEntry);
   const takeStashEntry = usePromptStashStore((state) => state.takeEntry);
   const finalizeStashEntryImages = usePromptStashStore((state) => state.finalizeEntryImages);
@@ -504,7 +507,15 @@ export function useComposerStash(input: {
   };
   const deleteStashEntryStable = useStableCallback(deleteStashEntry);
 
-  const stashCurrentPrompt = async () => {
+  const stashCurrentPrompt = async (scope: "global" | "thread" = "global") => {
+    const originThread = readThreadShell(routeThreadRef);
+    if (scope === "thread" && !originThread) {
+      toastManager.add({
+        type: "info",
+        title: m(msg("Open a saved thread to stash a prompt there")),
+      });
+      return;
+    }
     // Stashing clears the draft. A pasted attachment still downloading would then land in the
     // emptied composer instead of travelling with the entry it belongs to.
     if (pendingDraftWork.has(attachmentTargetKey)) {
@@ -540,7 +551,7 @@ export function useComposerStash(input: {
       ),
     ];
     if (prompt.length === 0 && images.length === 0 && files.length === 0) {
-      const entries = usePromptStashStore.getState().entries;
+      const entries = stashEntriesForThread(usePromptStashStore.getState().entries, routeThreadRef);
       const entry = entries.length === 1 ? entries[0] : undefined;
       if (entry && !entry.pendingImageCount) {
         await restoreStashEntry(entry);
@@ -607,6 +618,8 @@ export function useComposerStash(input: {
         id: entryId,
         createdAt: new Date().toISOString(),
         prompt,
+        scope,
+        ...(originThread ? { origin: routeThreadRef, originTitle: originThread.title } : {}),
         attachments: [],
         ...(stashedFiles.length > 0 ? { files: stashedFiles } : {}),
         droppedImageNames: [],
@@ -761,19 +774,21 @@ export function useComposerStash(input: {
 
   // Read at event time, so the scope registers once per mounted composer instead of
   // re-registering (and reshuffling capture-scope priority) whenever a guard flips.
-  const handleStashShortcut = useStableCallback((event: KeyboardEvent) => {
-    // Always claim the shortcut so the browser save dialog never opens,
-    // even when the composer is in a state that can't stash.
-    event.preventDefault();
-    event.stopPropagation();
-    if (isCommandPaletteOpen() || isRevertingCheckpoint()) return;
-    if (pendingUserInputs.length > 0) {
-      setIsStashMenuOpen((open) => !open);
-      return;
-    }
-    if (projectSelectionRequired || activePendingProgress !== null) return;
-    void stashCurrentPromptStable();
-  });
+  const handleStashShortcut = useStableCallback(
+    (event: KeyboardEvent, scope: "global" | "thread") => {
+      // Always claim the shortcut so the browser save dialog never opens,
+      // even when the composer is in a state that can't stash.
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.repeat || isCommandPaletteOpen() || isRevertingCheckpoint()) return;
+      if (pendingUserInputs.length > 0) {
+        setIsStashMenuOpen((open) => !open);
+        return;
+      }
+      if (projectSelectionRequired || activePendingProgress !== null) return;
+      void stashCurrentPromptStable(scope);
+    },
+  );
   // Capture phase while the composer is mounted, so Mod+S never reaches the browser's save
   // dialog even when a focused widget (the model picker search) stops the key.
   const embedded = use(BackgroundThreadContext);
@@ -790,7 +805,10 @@ export function useComposerStash(input: {
   useEffect(() => {
     if (hiddenThread) return;
     return registerCommands(
-      { "composer.stash": handleStashShortcut },
+      {
+        "composer.stash": (event) => handleStashShortcut(event, "global"),
+        "composer.stashToThread": (event) => handleStashShortcut(event, "thread"),
+      },
       {
         capture: true,
         context: readShortcutContext,

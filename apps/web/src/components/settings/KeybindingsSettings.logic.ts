@@ -258,7 +258,15 @@ const KEYBINDING_GROUPS = [
   {
     id: "navigation",
     title: msg("Navigation"),
-    prefixes: ["sidebar", "rightPanel", "commandPalette", "filePicker", "projectSearch", "editor"],
+    prefixes: [
+      "sidebar",
+      "rightPanel",
+      "commandPalette",
+      "filePicker",
+      "projectSearch",
+      "editor",
+      "settings",
+    ],
   },
   { id: "threads", title: msg("Threads"), prefixes: ["thread", "chat", "pullRequest"] },
   { id: "composer", title: msg("Composer"), prefixes: ["composer", "modelPicker"] },
@@ -491,8 +499,10 @@ const COMMAND_LABELS: Partial<Record<KeybindingCommand, string>> = {
   "appearance.cycle": msg("Appearance: Cycle"),
   "themeEditor.toggle": msg("Theme Editor: Toggle"),
   "composer.stash": msg("Composer: Stash"),
+  "composer.stashToThread": msg("Composer: Stash to Thread"),
   "composer.host": msg("Composer: Host"),
   "composer.cycleHost": msg("Composer: Cycle Host"),
+  "composer.attachFiles": msg("Composer: Attach Files"),
   "composer.effort": msg("Composer: Effort"),
   "composer.increaseEffort": msg("Composer: Increase Effort"),
   "composer.decreaseEffort": msg("Composer: Decrease Effort"),
@@ -514,6 +524,10 @@ const COMMAND_LABELS: Partial<Record<KeybindingCommand, string>> = {
   "thread.settle": msg("Thread: Settle"),
   "thread.pin": msg("Thread: Pin"),
   "thread.regenerateTitle": msg("Thread: Regenerate Title"),
+  "thread.snooze": msg("Thread: Snooze"),
+  "thread.rename": msg("Thread: Rename"),
+  "thread.archive": msg("Thread: Archive"),
+  "thread.delete": msg("Thread: Delete"),
   "thread.undo": msg("Thread: Undo"),
 };
 

@@ -423,6 +423,10 @@
       "types": "./src/httpReadiness.ts",
       "import": "./src/httpReadiness.ts"
     },
+    "./linuxAppDirectories": {
+      "types": "./src/linuxAppDirectories.ts",
+      "import": "./src/linuxAppDirectories.ts"
+    },
     "./devHome": {
       "types": "./src/devHome.ts",
       "import": "./src/devHome.ts"
@@ -538,6 +542,10 @@
     "./codexMarkdownDirectives": {
       "types": "./src/codexMarkdownDirectives.ts",
       "import": "./src/codexMarkdownDirectives.ts"
+    },
+    "./codexMemoryCitations": {
+      "types": "./src/codexMemoryCitations.ts",
+      "import": "./src/codexMemoryCitations.ts"
     },
     "./markdownGithubAlerts": {
       "types": "./src/markdownGithubAlerts.ts",

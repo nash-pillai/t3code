@@ -1,3 +1,4 @@
+import { SETTINGS_KEYBINDING_PAGES } from "@t3tools/contracts";
 import type { AnyRouter } from "@tanstack/react-router";
 import { msg } from "gt-react";
 
@@ -103,6 +104,22 @@ export function installCommandPaletteCommands(
         dispatchCommandPalette({ _tag: "SetOpen", open: false });
         void router.navigate({ to: "/usage" });
       },
+      ...Object.fromEntries(
+        SETTINGS_KEYBINDING_PAGES.map((page) => [
+          `settings.${page}`,
+          (event: KeyboardEvent) => {
+            consume(event);
+            if (event.repeat) return;
+            const to = `/settings/${page}` as const;
+            dispatchCommandPalette({ _tag: "SetOpen", open: false });
+            if (page === "keybindings" && router.state.location.pathname === to) {
+              document.getElementById("keybindings-filter")?.focus({ preventScroll: true });
+              return;
+            }
+            void router.navigate({ to });
+          },
+        ]),
+      ),
       "commandPalette.toggle": toggleOverlay("commandPalette.toggle"),
       "filePicker.toggle": toggleOverlay("filePicker.toggle"),
       "projectSearch.toggle": toggleOverlay("projectSearch.toggle"),

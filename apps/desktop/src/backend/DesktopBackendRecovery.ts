@@ -238,6 +238,7 @@ export function make(input: {
         ) {
           throw new Error("Could not verify desktop ownership of the backend");
         }
+        await NodeFSP.mkdir(input.appDataDirectory, { recursive: true });
         await NodeFSP.mkdir(directory, { mode: 0o700 }).catch((error) => {
           if (!isErrorCode(error, "EEXIST")) throw error;
         });

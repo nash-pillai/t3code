@@ -59,6 +59,16 @@ Download from [GitHub Releases](https://github.com/pingdotgg/t3code/releases) or
 - **Linux AppImage**: `chmod +x ./T3-Code-*.AppImage && ./T3-Code-*.AppImage` (x86_64 and ARM64). `.deb` self-updates with a password prompt; update AUR packages via your AUR helper (`yay -Syu`).
 - **NixOS / Home Manager**: Add `pkgs.t3code` to `environment.systemPackages` or `home.packages` (`t3code-desktop` launches the app; `t3` is included). Update via Nix rather than the in-app updater.
 
+### Linux storage
+
+New installations put configuration, durable data, runtime state, and caches
+under `t3code` in the corresponding XDG directories. Existing server homes
+under `~/.t3` remain usable. Use `T3CODE_HOME` to choose a custom server root.
+
+The Linux desktop profile uses `$XDG_DATA_HOME/t3code-v2` and backend recovery
+records use `$XDG_STATE_HOME/t3code-backend-recovery`. T3 Code keeps using the
+legacy profile if it is in use or cannot be moved safely.
+
 ### The `t3` command
 
 The desktop app bundles `t3` and sets it up on first launch (manage anytime under **Settings → About → t3 command**). Use **Add to PATH** if needed, then open a new terminal.

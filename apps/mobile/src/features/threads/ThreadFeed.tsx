@@ -1,3 +1,4 @@
+import { extractCodexMemoryCitations } from "@t3tools/shared/codexMemoryCitations";
 import { CollapsibleUserMessageBody } from "./CollapsibleUserMessageBody";
 import { msg, T, useGT, useLocale, useMessages } from "gt-react-native";
 import { m } from "../../i18n/messages";
@@ -1320,8 +1321,9 @@ const AssistantMarkdownContent = memo(function AssistantMarkdownContent(props: {
   readonly skills?: ReadonlyArray<SelectableMarkdownSkill> | undefined;
 }) {
   const gt = useGT();
+  const { text: body, citations } = extractCodexMemoryCitations(props.markdown);
   const liveMarkdown = useLiveThreadLinkLabels(
-    props.markdown,
+    body,
     props.environmentId,
     useLinkedEnvironments(
       hasThreadLinks(props.markdown) ? props.environmentId : null,
@@ -1418,6 +1420,23 @@ const AssistantMarkdownContent = memo(function AssistantMarkdownContent(props: {
             </ListSection>
           </ScrollView>
         </Sheet>
+      ) : null}
+      {citations.length ? (
+        <View className="gap-1">
+          <Text textRole="footnote" className="font-t3-medium text-foreground-muted">
+            <T>Memory sources</T>
+          </Text>
+          {citations.map((citation) => (
+            <Text
+              key={JSON.stringify(citation)}
+              selectable
+              textRole="footnote"
+              className="text-foreground-muted"
+            >
+              {citation.note ? citation.source + " · " + citation.note : citation.source}
+            </Text>
+          ))}
+        </View>
       ) : null}
     </>
   );

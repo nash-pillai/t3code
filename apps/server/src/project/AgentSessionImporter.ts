@@ -262,7 +262,11 @@ const make = Effect.gen(function* () {
         ),
       );
     })).flat();
-    const outcomes = scanner.recentThreads(project.workspaceRoot, completedSources);
+    const outcomes = scanner.recentThreads(
+      project.workspaceRoot,
+      input.codexSessions === undefined ? completedSources : [],
+      input.codexSessions === undefined ? undefined : { sessions: input.codexSessions },
+    );
     const importedThreadIds = new Set<ThreadId>();
     let importedCount = 0;
     let skippedCount = 0;

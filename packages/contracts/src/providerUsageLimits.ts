@@ -51,6 +51,12 @@ export const ServerProviderUsageLimits = Schema.Struct({
   zeroSpendCap: Schema.optional(Schema.Boolean),
   credentialFingerprint: Schema.optional(TrimmedNonEmptyString),
   resetCredits: Schema.optional(ServerProviderResetCredits),
+  purchasedCredits: Schema.optional(
+    Schema.Union([
+      Schema.Literal("unlimited"),
+      Schema.String.check(Schema.isPattern(/^\d+(?:\.\d+)?$/)),
+    ]),
+  ),
   externalUsage: Schema.optional(
     Schema.Struct({
       label: TrimmedNonEmptyString,

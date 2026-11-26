@@ -58,6 +58,8 @@ function resolveEarlyDesktopSettingsPath(input: {
     homeDirectory: input.homeDirectory,
     joinPath: input.joinPath,
     t3Home,
+    platform: "linux",
+    xdgStateHome: input.env.XDG_STATE_HOME,
   });
   const stateDir = resolveDesktopStateDir({
     baseDir,

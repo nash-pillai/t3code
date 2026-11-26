@@ -1,4 +1,6 @@
 import * as Context from "effect/Context";
+import * as HostProcess from "@t3tools/shared/HostProcess";
+import { linuxAppDirectories } from "@t3tools/shared/linuxAppDirectories";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -151,23 +153,31 @@ export const deriveServerPaths = Effect.fn(function* (
     baseDir,
     devUrl !== undefined && !options.baseDirIsExplicit ? "dev" : "userdata",
   );
+  const platform = yield* HostProcess.Platform;
+  const xdg =
+    platform === "linux" && devUrl === undefined
+      ? linuxAppDirectories(yield* HostProcess.HomeDirectory, yield* HostProcess.Environment)
+      : null;
+  const layout = xdg?.state === baseDir ? xdg : null;
+  const configDir = layout?.config ?? stateDir;
+  const dataDir = layout?.data;
   const dbPath = join(stateDir, "statev2.sqlite");
-  const attachmentsDir = join(stateDir, "attachments");
+  const attachmentsDir = join(dataDir ?? stateDir, "attachments");
   const logsDir = join(stateDir, "logs");
   const providerLogsDir = join(logsDir, "provider");
-  const providerStatusCacheDir = join(baseDir, "caches");
+  const providerStatusCacheDir = layout?.cache ?? join(baseDir, "caches");
   return {
     stateDir,
     dbPath,
-    keybindingsConfigPath: join(stateDir, "keybindings.json"),
-    settingsPath: join(stateDir, "settings.json"),
-    environmentThemesDir: join(stateDir, "themes"),
+    keybindingsConfigPath: join(configDir, "keybindings.json"),
+    settingsPath: join(configDir, "settings.json"),
+    environmentThemesDir: join(configDir, "themes"),
     providerStatusCacheDir,
-    worktreesDir: join(baseDir, "worktrees"),
-    workflowsDir: join(baseDir, "workflows"),
+    worktreesDir: join(dataDir ?? baseDir, "worktrees"),
+    workflowsDir: join(dataDir ?? baseDir, "workflows"),
     worktreeCheckoutCacheDir: join(providerStatusCacheDir, "worktree-checkouts"),
     attachmentsDir,
-    browserArtifactsDir: join(stateDir, "browser-artifacts"),
+    browserArtifactsDir: join(dataDir ?? stateDir, "browser-artifacts"),
     logsDir,
     serverTracePath: join(logsDir, "server.trace.ndjson"),
     providerLogsDir,
